@@ -19,6 +19,7 @@
     "@nanostores/react": "^1.1.0",
     "@react-three/fiber": "^8.16.8",
     "astro": "^7.3.7",
+    "events": "^3.3.0",
     "mio-player": "^1.1.1",
     "nanostores": "^1.5.5",
     "react": "^18.3.1",
