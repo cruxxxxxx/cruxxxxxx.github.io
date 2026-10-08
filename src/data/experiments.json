@@ -13,11 +13,13 @@
 			"category": "game",
 			"group": "experiments",
 			"year": "2025",
-			"description": ["WarioWare DIY is a game / tool for Nintendo DS that allows you to draw, animate, compose music, and program a microgame.",
-				"\n\nThis year for my birthday, I created one that replicated my experience of getting a commemorative tattoo.", 
+			"description": [
+				"WarioWare DIY is a game / tool for Nintendo DS that allows you to draw, animate, compose music, and program a microgame.",
+				"\n\nThis year for my birthday, I created one that replicated my experience of getting a commemorative tattoo.",
 				"\n\nI also asked my closest friends to make microgames as a gift. I wanted to share the experience of making things.",
 				"\n\nMany of my friends are artists of various mediums and we all agreed that it was very fun to work within the limitations of the tool."
-		]},
+			]
+		},
 		{
 			"name": "Glass Shatter Transition",
 			"marginTopOpen": "2%",
@@ -27,7 +29,14 @@
 			"marginTopHover": "-17%",
 			"marginBottomHover": "-17%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": [{"src": "https://d1yrgsd0mpwmck.cloudfront.net/glass_shatter_1.mp4", "poster": "glass_1.png"}, "glass_1.png", "https://d1yrgsd0mpwmck.cloudfront.net/glass_shatter_2.mp4"],
+			"mediaSrcs": [
+				{
+					"src": "https://d1yrgsd0mpwmck.cloudfront.net/glass_shatter_1.mp4",
+					"poster": "glass_1.png"
+				},
+				"glass_1.png",
+				"https://d1yrgsd0mpwmck.cloudfront.net/glass_shatter_2.mp4"
+			],
 			"category": "vfx",
 			"group": "experiments",
 			"year": "2024",
@@ -61,8 +70,10 @@
 			"category": "vfx",
 			"group": "experiments",
 			"year": "2024",
-			"description": ["Custom texture with different art for each MipMap level, and a simple shader to create the impression of water.",
-			"\n\nUsing MipMaps to create explicit artistic effects by viewing distance, such as specularity or abstractions, is a powerful & performant tool. "]
+			"description": [
+				"Custom texture with different art for each MipMap level, and a simple shader to create the impression of water.",
+				"\n\nUsing MipMaps to create explicit artistic effects by viewing distance, such as specularity or abstractions, is a powerful & performant tool. "
+			]
 		},
 		{
 			"name": "Toon Shader",
@@ -73,7 +84,13 @@
 			"marginTopHover": "-17%",
 			"marginBottomHover": "-17%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": [{"src": "https://d1yrgsd0mpwmck.cloudfront.net/toon_shader.mp4", "poster": "toon_shader.png"}, "toon_shader.png"],
+			"mediaSrcs": [
+				{
+					"src": "https://d1yrgsd0mpwmck.cloudfront.net/toon_shader.mp4",
+					"poster": "toon_shader.png"
+				},
+				"toon_shader.png"
+			],
 			"category": "shader",
 			"group": "experiments",
 			"year": "2023",
@@ -88,7 +105,13 @@
 			"marginTopHover": "-17%",
 			"marginBottomHover": "-17%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": [{"src": "https://d1yrgsd0mpwmck.cloudfront.net/dither.mp4", "poster": "dither.png"}, "dither.png"],
+			"mediaSrcs": [
+				{
+					"src": "https://d1yrgsd0mpwmck.cloudfront.net/dither.mp4",
+					"poster": "dither.png"
+				},
+				"dither.png"
+			],
 			"category": "shader",
 			"group": "experiments",
 			"year": "2023",
@@ -118,14 +141,20 @@
 			"marginTopHover": "-11%",
 			"marginBottomHover": "-23%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": ["vector.png", "https://d1yrgsd0mpwmck.cloudfront.net/vector_lookat.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/vector_radial.mp4"],
+			"mediaSrcs": [
+				"vector.png",
+				"https://d1yrgsd0mpwmck.cloudfront.net/vector_lookat.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/vector_radial.mp4"
+			],
 			"category": "math",
 			"group": "experiments",
 			"year": "2024",
-			"description": ["Vector math examples for game development, including:\n",
-			"\n• Calculating the dot product of the player's look direction & direction towards the enemy with cone of view threshold",
-			"\n\n• Entity with a radial trigger based on distance between center points",
-			"\n\nDrawn using the Shapes library from Freya Holmer"]
+			"description": [
+				"Vector math examples for game development, including:\n",
+				"\n• Calculating the dot product of the player's look direction & direction towards the enemy with cone of view threshold",
+				"\n\n• Entity with a radial trigger based on distance between center points",
+				"\n\nDrawn using the Shapes library from Freya Holmer"
+			]
 		},
 		{
 			"name": "Recolor",

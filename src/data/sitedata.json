@@ -13,8 +13,10 @@
 			"category": "game",
 			"group": "projects",
 			"year": "2026",
-			"description": ["Music Puzzle Action game with a unique twist: you tap on the beat to make color matches.", 
-			"\n\nTools: Unity, C#, GLSL, Koreographer, SuperTextMesh, DOTween, Ableton, Photoshop, After Effects"]
+			"description": [
+				"Music Puzzle Action game with a unique twist: you tap on the beat to make color matches.",
+				"\n\nTools: Unity, C#, GLSL, Koreographer, SuperTextMesh, DOTween, Ableton, Photoshop, After Effects"
+			]
 		},
 		{
 			"name": "\"The Write to Bear Claws\"\nPublic Phone School",
@@ -33,7 +35,7 @@
 				"'PPS' is a synth-punk supergroup of Blank Body & Peace Enforcer.",
 				"\nTheir self-titled project was released in June 2023, with 'The Write to Bear Claws' as the lead single. Hypnotize Inc was comissioned to create the music video.",
 				"\n\ntools: Premiere Pro, Procreate, After Effects, Analog Video Glitching & Collaging"
-			  ]
+			]
 		},
 		{
 			"name": "Lush Shirt",
@@ -48,7 +50,9 @@
 			"category": "clothing",
 			"group": "projects",
 			"year": "2023",
-			"description": ["Created a fan shirt for Lush, a shoegaze band active from 1987 to 1996. Designed in Photoshop and separated colors into 3 layers for hand screenprinting."]
+			"description": [
+				"Created a fan shirt for Lush, a shoegaze band active from 1987 to 1996. Designed in Photoshop and separated colors into 3 layers for hand screenprinting."
+			]
 		},
 		{
 			"name": "vjx",
@@ -74,12 +78,22 @@
 			"marginTopHover": "-38%",
 			"marginBottomHover": "-40%",
 			"marginCloseDiff": "-100",
-			"mediaSrcs": ["pe1.png", "https://d1yrgsd0mpwmck.cloudfront.net/pe/pe1.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/pe/pe2.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/pe/pe3.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/pe/pe4.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/pe/pe5.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/pe/pe6.mp4"],
+			"mediaSrcs": [
+				"pe1.png",
+				"https://d1yrgsd0mpwmck.cloudfront.net/pe/pe1.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/pe/pe2.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/pe/pe3.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/pe/pe4.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/pe/pe5.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/pe/pe6.mp4"
+			],
 			"category": "concert visuals",
 			"group": "projects",
 			"year": "2020",
-			"description": ["Pre-Recorded visuals for Peace Enforcer on a live stream concert.",
-			"\n\nTools: Unity, Resolume, Premiere Pro, RunwayML"]
+			"description": [
+				"Pre-Recorded visuals for Peace Enforcer on a live stream concert.",
+				"\n\nTools: Unity, Resolume, Premiere Pro, RunwayML"
+			]
 		},
 		{
 			"name": "Skylar Spence at Elsewhere",
@@ -90,12 +104,21 @@
 			"marginTopHover": "-1%",
 			"marginBottomHover": "-33%",
 			"marginCloseDiff": "-100",
-			"mediaSrcs": ["skylar1.png", "https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar1.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar2.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar3.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar4.mp4", "https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar5.mp4"],
+			"mediaSrcs": [
+				"skylar1.png",
+				"https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar1.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar2.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar3.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar4.mp4",
+				"https://d1yrgsd0mpwmck.cloudfront.net/skylar/skylar5.mp4"
+			],
 			"category": "concert visuals",
 			"group": "projects",
 			"year": "2020",
-			"description": ["Live visuals for Skylar Spence at Elsewhere in Brooklyn, NY. Performed in real-time using a custom Unity VJ tool with shaders for effects & transitions.",
-			"\n\nTools: Unity"]
+			"description": [
+				"Live visuals for Skylar Spence at Elsewhere in Brooklyn, NY. Performed in real-time using a custom Unity VJ tool with shaders for effects & transitions.",
+				"\n\nTools: Unity"
+			]
 		}
 	]
 }
