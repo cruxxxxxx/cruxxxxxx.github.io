@@ -84,6 +84,11 @@ async function route(req, res) {
     saveProject(originalName ?? null, project);
     return sendJson(res, 200, { ok: true });
   }
+  if (action === 'POST /__editor/order') {
+    const { names } = JSON.parse(await readBody(req));
+    setYearOrder(names);
+    return sendJson(res, 200, { ok: true });
+  }
   if (action === 'POST /__editor/delete') {
     const { name } = JSON.parse(await readBody(req));
     deleteProject(name);
@@ -143,6 +148,26 @@ function deleteProject(name) {
   writeGroup(found.group, groups[found.group]);
 }
 
+/** names: every project of one year, in the order they should appear. */
+function setYearOrder(names) {
+  const groups = readAllGroups();
+  const found = names.map((name) => ({ name, at: findProject(groups, name) }));
+  const missing = found.filter(({ at }) => !at).map(({ name }) => name);
+  if (missing.length > 0) {
+    throw httpError(404, `no project named ${missing.map((name) => JSON.stringify(name)).join(', ')}`);
+  }
+  const years = new Set(found.map(({ at }) => groups[at.group][at.index].year));
+  if (years.size !== 1) {
+    throw httpError(400, 'can only order projects within one year');
+  }
+  found.forEach(({ at }, position) => {
+    groups[at.group][at.index].yearOrder = position + 1;
+  });
+  for (const group of new Set(found.map(({ at }) => at.group))) {
+    writeGroup(group, groups[group]);
+  }
+}
+
 function findProject(groups, name) {
   for (const [group, projects] of Object.entries(groups)) {
     const index = projects.findIndex((project) => project.name === name);
@@ -177,11 +202,16 @@ function validateProject(project) {
   if (!/^\d{4}$/.test(String(project.year ?? ''))) {
     problems.push('year must be four digits');
   }
-  if (!Array.isArray(project.description) || !project.description.every((part) => typeof part === 'string')) {
-    problems.push('description must be a list of text');
+  const description = project.description;
+  const isTextList = Array.isArray(description) && description.every((part) => typeof part === 'string');
+  if (typeof description !== 'string' && !isTextList) {
+    problems.push('description must be text');
   }
   if (!Array.isArray(project.mediaSrcs) || project.mediaSrcs.length === 0) {
     problems.push('at least one media item is required (the first one is the cover)');
+  }
+  if (project.yearOrder !== undefined && !Number.isInteger(project.yearOrder)) {
+    problems.push('yearOrder must be a whole number');
   }
   for (const field of MARGIN_FIELDS) {
     if (!nonEmptyString(project[field])) {

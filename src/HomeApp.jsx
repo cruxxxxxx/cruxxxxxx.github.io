@@ -16,6 +16,7 @@ import { useStore } from '@nanostores/react';
 import { $activeGroups, $filtering, $groupRequest } from './stores/site.js';
 import { scrollToTop } from './util.js';
 import { $editorDraft, $editorPreview } from './editor/store.js';
+import { compareProjects } from './projectOrder.js';
 
 import { useProjectState, useLoadingState } from './hooks/index_hooks.js';
 import { usePressableCallbacks } from './hooks/project_pressable_hooks.js';
@@ -28,14 +29,12 @@ getIsThis } from './homepage_utils.js';
 
 const projectData = [...SiteData['projects'], ...Experiments['projects']];
 
-const byYearDesc = (a, b) => Number(b.year) - Number(a.year);
-
 // group toggles are boolean: show every project whose group is active, sorted
 // newest-first so projects and experiments interweave by year.
 function filterProjectData(activeGroups) {
   return projectData
     .filter(project => activeGroups.includes(project.group))
-    .sort(byYearDesc);
+    .sort(compareProjects);
 }
 
 // Project editor (dev only): show the unsaved draft in place of the saved
@@ -49,7 +48,7 @@ function withEditorDraft(projects, draft) {
   if (!shown.includes(project)) {
     shown.push(project);
   }
-  return shown.sort(byYearDesc);
+  return shown.sort(compareProjects);
 }
 
 const PREVIEW_STATES = {

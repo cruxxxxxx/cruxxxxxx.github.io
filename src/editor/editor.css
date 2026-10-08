@@ -118,3 +118,14 @@
 .project-editor .pe-primary:hover { background: #333; }
 .project-editor .pe-danger { margin-left: auto; border-color: #b00; color: #b00; }
 .pe-status { flex-basis: 100%; margin: 4px 0 0; color: #555; }
+
+.pe-year-order { margin: 0; padding-left: 18px; }
+.pe-year-order li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.pe-year-order .pe-current { font-weight: bold; }
+.project-editor button:disabled { opacity: .3; cursor: default; }

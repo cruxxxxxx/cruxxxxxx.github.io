@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $editorDraft, $editorPreview } from './store.js';
+import { compareProjects } from '../projectOrder.js';
 import './editor.css';
 
 // Local-only project editor: `npm run dev`, then "edit" in the corner.
@@ -154,6 +155,8 @@ export default function ProjectEditor() {
 
       {draft && <DraftForm draft={draft} preview={preview} />}
 
+      {draft && groups && <YearOrder draft={draft} groups={groups} />}
+
       {draft && (
         <footer className="pe-actions">
           <button type="button" className="pe-primary" onClick={save}>save</button>
@@ -202,7 +205,7 @@ function DraftForm({ draft, preview }) {
         <span>description <em>(blank line = new paragraph)</em></span>
         <textarea
           rows={8}
-          value={project.description.join('')}
+          value={descriptionText(project.description)}
           onChange={(e) => update({ description: toParagraphs(e.target.value) })}
         />
       </label>
@@ -235,6 +238,73 @@ function DraftForm({ draft, preview }) {
         </label>
       </section>
     </div>
+  );
+}
+
+// Homepage order is newest year first; this sets the order among projects
+// that share a year. Moves save straight away (and reload the page).
+function YearOrder({ draft, groups }) {
+  const [status, setStatus] = useState('');
+  if (draft.originalName === null) {
+    return (
+      <section className="pe-section">
+        <h3>order</h3>
+        <p className="pe-status">save the new project first, then you can order it within its year</p>
+      </section>
+    );
+  }
+
+  const saved = allProjects(groups).find((project) => project.name === draft.originalName);
+  const sameYear = allProjects(groups)
+    .filter((project) => project.year === saved?.year)
+    .sort(compareProjects);
+  if (!saved || sameYear.length < 2) {
+    return null;
+  }
+
+  const hasUnsavedEdits = JSON.stringify(saved) !== JSON.stringify(draft.project);
+
+  const move = async (index, step) => {
+    const target = index + step;
+    if (target < 0 || target >= sameYear.length) {
+      return;
+    }
+    if (hasUnsavedEdits && !window.confirm('Reordering reloads the page and drops your unsaved edits. Continue?')) {
+      return;
+    }
+    const names = sameYear.map((project) => project.name);
+    [names[index], names[target]] = [names[target], names[index]];
+    setStatus('saving order…');
+    const response = await fetch('/__editor/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ names }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setStatus(`not saved: ${result.error}`);
+      return;
+    }
+    rememberReopenName(draft.originalName);
+    window.location.reload();
+  };
+
+  return (
+    <section className="pe-section">
+      <h3>order within {saved.year} <em>(saves right away)</em></h3>
+      <ol className="pe-year-order">
+        {sameYear.map((project, index) => (
+          <li key={project.name} className={project.name === draft.originalName ? 'pe-current' : ''}>
+            <span>{oneLine(project.name)} <em>{project.group}</em></span>
+            <span className="pe-media-buttons">
+              <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="earlier">↑</button>
+              <button type="button" onClick={() => move(index, 1)} disabled={index === sameYear.length - 1} aria-label="later">↓</button>
+            </span>
+          </li>
+        ))}
+      </ol>
+      {status && <p className="pe-status">{status}</p>}
+    </section>
   );
 }
 
@@ -371,6 +441,11 @@ function pickerValue(draft) {
     return '';
   }
   return draft.originalName ?? '__new';
+}
+
+// descriptions are a list of paragraphs, or (in some older entries) one string
+function descriptionText(description) {
+  return Array.isArray(description) ? description.join('') : description ?? '';
 }
 
 // "a\n\nb\n\nc" → ["a", "\n\nb", "\n\nc"], the layout the JSON already uses
