@@ -1,4 +1,11 @@
 ---
+import { ClientRouter } from 'astro:transitions';
+import Moire from '../components/moire/moire.jsx';
+import { Header } from '../components/header/header.jsx';
+import { Footer } from '../components/footer/footer.jsx';
+import '../index.css';
+import '../components/footer/footer.css';
+
 interface Props {
   title?: string;
   description?: string;
@@ -45,8 +52,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={image} />
+
+    {/* page changes swap only the content; the frame below persists */}
+    <ClientRouter />
   </head>
   <body>
+    <Moire client:only="react" transition:persist="moire" />
+    <Header client:only="react" transition:persist="header" />
     <slot />
+    <Footer client:only="react" transition:persist="footer" />
   </body>
 </html>

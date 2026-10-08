@@ -27,7 +27,9 @@ export function Header() {
 
   return (
     <div id="header" className={hasInteracted ? 'compact' : ''}>
-      <img className="strobing" src="logo.png" alt="Logo" />
+      <a href="/" aria-label="hypnotize inc. home">
+        <img className="strobing" src="/logo.png" alt="hypnotize inc." />
+      </a>
     </div>
   );
 }

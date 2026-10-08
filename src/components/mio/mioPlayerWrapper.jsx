@@ -15,7 +15,7 @@ const MioPlayerWrapper = ({ src, onLoaded }) => {
     mioPlayerRef.current = mioPlayer;
 
     const loadSound = (name) => {
-      const audio = new Audio(`warioware/audio/${name}.ogg`);
+      const audio = new Audio(`/warioware/audio/${name}.ogg`);
       audio.volume = 0.3;
       return audio;
     };
@@ -48,11 +48,11 @@ const MioPlayerWrapper = ({ src, onLoaded }) => {
     mioPlayer.musicPlayer = customMusicPlayer;
 
     const fontBitmap = new Image();
-    fontBitmap.src = 'warioware/images/miofont.png';
+    fontBitmap.src = '/warioware/images/miofont.png';
     mioPlayer.fontBitmap = fontBitmap;
 
     const confettiBitmap = new Image();
-    confettiBitmap.src = 'warioware/images/confetti.png';
+    confettiBitmap.src = '/warioware/images/confetti.png';
     mioPlayer.confettiBitmap = confettiBitmap;
 
     const windowSize = () => [window.innerWidth, window.innerHeight];

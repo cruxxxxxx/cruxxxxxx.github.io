@@ -9,12 +9,21 @@
 html,body {
     margin: 0;
     height:100%;
-    user-select: none;
     scrollbar-gutter: stable; 
     -webkit-overflow-scrolling: touch;
 }
 
-img {
+/* homepage and frame only: the blog's text must stay selectable and its
+   photos clickable (lightbox) */
+#projects,
+#header,
+.outside-footer {
+  user-select: none;
+}
+
+#projects img,
+#header img,
+.outside-footer img {
   height: auto;
   width: 100%;
   pointer-events: none;
@@ -26,7 +35,7 @@ button {
   cursor: pointer;
 }
 
-video {
+#projects video {
   height: auto;
   width: 100%;
   user-drag: none;  
@@ -136,12 +145,12 @@ video {
   animation-iteration-count: 10; 
 }
 
-.row:after {
+#main .row:after {
   display: table;
   clear: both;
 }
 
-.column {
+#projects.column {
   position: relative;
   margin: 0 auto; 
 

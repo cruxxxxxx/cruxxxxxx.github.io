@@ -1,21 +1,20 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import './index.css';
+// site-wide styles (index.css, footer.css) come from SiteLayout
 import './components/project/project.css';
 import './components/slideshow/slideshow.css';
 import './components/openmark/openmark.css';
 import './svg.css';
-import './components/footer/footer.css';
 
 import SiteData from './data/sitedata.json';
 import Experiments from './data/experiments.json';
 
 import { ProjectStates } from './components/project/projectStatesHandler.js';
 import { Project } from './components/project/project.jsx';
-import { Header } from './components/header/header.jsx';
-import { Footer } from './components/footer/footer.jsx';
 import { Pressable } from 'react-native';
 import LoadingBar from 'react-top-loading-bar'
-import WebGLCanvas from './components/moire/moire.jsx';
+import { useStore } from '@nanostores/react';
+import { $activeGroups, $filtering, $groupRequest } from './stores/site.js';
+import { scrollToTop } from './util.js';
 
 import { useProjectState, useLoadingState } from './hooks/index_hooks.js';
 import { usePressableCallbacks } from './hooks/project_pressable_hooks.js';
@@ -27,12 +26,29 @@ mapProjectStates,
 getIsThis } from './homepage_utils.js';
 
 const projectData = [...SiteData['projects'], ...Experiments['projects']];
-// Default view mixes both groups, sorted newest-first so projects and
-// experiments interweave by year.
-const byYearDesc = (a, b) => Number(b.year) - Number(a.year);
-const allProjectsSorted = [...projectData].sort(byYearDesc);
-const texture1 = 'tex1_med.png';
-const texture2 = 'tex2_low.png';
+
+// group toggles are boolean: show every project whose group is active, sorted
+// newest-first so projects and experiments interweave by year.
+function filterProjectData(activeGroups) {
+  return projectData
+    .filter(project => activeGroups.includes(project.group))
+    .sort((a, b) => Number(b.year) - Number(a.year));
+}
+
+const wipeScreen = (projectMask) => {
+  projectMask.style.backgroundPositionY = '-100vh';
+  projectMask.style.display = 'block';
+  projectMask.classList.remove('wipe');
+  projectMask.classList.add('wipe');
+};
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Module state outlives the component: navigating to the blog unmounts the
+// homepage, but coming back is a client-side swap, not a reload. Once the
+// first visit has passed the loading gate, later visits skip it (the images
+// are cached by then).
+let hasLoadedOnce = false;
 
 // Deep-linking: the open project is reflected in the URL hash (e.g. #db) and a
 // matching hash on load opens that project.
@@ -47,10 +63,11 @@ const setProjectHash = (project) => {
 function App() {
   const { projectStates, setProjectStates, setActiveIndex, resetActiveIndex, isActive, isNotActive } = useProjectState(projectData);
   const { loaded, setLoaded, progress, setProgress, startAnimation, setStartAnimation } = useLoadingState(projectData);
-  const [filteredProjects, setFilteredProjects] = useState(allProjectsSorted);
+  // a footer click on another page may already have picked a group
+  const [filteredProjects, setFilteredProjects] = useState(() => filterProjectData($activeGroups.get()));
   // the initial loading bar / mask only gates the first paint; filter changes
   // afterward must not re-trigger it.
-  const [firstLoadComplete, setFirstLoadComplete] = useState(false);
+  const [firstLoadComplete, setFirstLoadComplete] = useState(hasLoadedOnce);
 
   const [hovering, setHovering] = useState(false);
 
@@ -61,6 +78,46 @@ function App() {
   useEffect(() => {
     setProjectStates(projectData.map(() => ProjectStates.CLOSED));
   }, [setProjectStates]);
+
+  // returning from another page: skip the loading gate, just run the intro
+  useEffect(() => {
+    if (hasLoadedOnce) {
+      finishedLoading();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Footer group clicks: close everything, wipe, swap the grid under the wipe.
+  // A request made before this mount is already reflected in the initial grid.
+  const groupRequest = useStore($groupRequest);
+  const handledGroupRequest = useRef(groupRequest);
+  useEffect(() => {
+    if (!groupRequest || groupRequest === handledGroupRequest.current) {
+      return;
+    }
+    handledGroupRequest.current = groupRequest;
+    applyGroups(groupRequest.groups);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupRequest]);
+
+  const applyGroups = async (groups) => {
+    $filtering.set(true);
+    setActiveIndex(null);
+    setProjectStates((prev) => prev.map(() => ProjectStates.CLOSED));
+    setProjectHash(null);
+    scrollToTop();
+
+    await delay(250);
+    wipeScreen(projectMaskRef.current);
+
+    await delay(150);
+    setFilteredProjects(filterProjectData(groups));
+
+    await delay(900);
+    projectMaskRef.current.style.display = 'none';
+    $filtering.set(false);
+    scrollToTop();
+  };
 
   const onMediaLoaded = useCallback((index) => {
     setLoaded(prevLoaded => {
@@ -107,11 +164,11 @@ function App() {
     if (!slug) {
       return;
     }
-    const target = allProjectsSorted.find((p) => slugify(p.name) === slug);
+    const target = filteredProjects.find((p) => slugify(p.name) === slug);
     if (!target) {
       return;
     }
-    const idx = allProjectsSorted.findIndex((p) => slugify(p.name) === slug);
+    const idx = filteredProjects.findIndex((p) => slugify(p.name) === slug);
     if (idx >= 0) {
       // open directly (not via openProject, which closes over the pre-filter
       // list) so the state and hash both refer to the deep-linked project
@@ -154,6 +211,7 @@ function App() {
   });
 
   const finishedLoading = () => {
+    hasLoadedOnce = true;
     setFirstLoadComplete(true);
     setProgress(0);
     projectMaskRef.current.style.display = 'none';
@@ -165,8 +223,6 @@ function App() {
   return (
     <React.StrictMode>
       <LoadingBar color="#85ab54" progress={progress} onLoaderFinished={() => finishedLoading()} />
-      <WebGLCanvas texture1={texture1} texture2={texture2} />
-      <Header />
       <div id="main">
         <div className="row">
           <div id="projects" className="column" ref={columnRef}>
@@ -193,13 +249,6 @@ function App() {
               <span>.</span><br/>
               <span>.</span><br/>
             </div>
-            <Footer 
-              projectData={projectData}
-              setActiveIndex={setActiveIndex}
-              setProjectStates={setProjectStates}
-              projectMaskRef={projectMaskRef}
-              onFilterChange={setFilteredProjects}
-            />
           </div>
         </div>
       </div>

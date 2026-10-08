@@ -57,7 +57,7 @@ const MoirePattern = ({ bottomTexturePath, topTexturePath, onLoadComplete }) => 
   );
 };
 
-const Moire = ({ texture1, texture2 }) => {
+const Moire = ({ texture1 = '/tex1_med.png', texture2 = '/tex2_low.png' }) => {
   const [loading, setLoading] = useState(true);
   const [canRunEffect, setCanRunEffect] = useState(true); 
   const coverDivRef = useRef();

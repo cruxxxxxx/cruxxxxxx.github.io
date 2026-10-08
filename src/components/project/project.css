@@ -47,17 +47,17 @@
   animation: fadeIn 3s forwards;
 }
 
-.hidden {
+#projects .hidden {
   height: 0;
   display: none;
 }
 
-.visible {
+#projects .visible {
   display: block;
   height: auto; 
 }
 
-.flex {
+#projects .flex {
   display: flex;
 }
 
@@ -210,7 +210,7 @@
   }
 }
 
-canvas {
+#projects canvas {
   position: relative;
   z-index: 10000; /* above .line-container */
   pointer-events: auto;

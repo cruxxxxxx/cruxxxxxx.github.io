@@ -1,71 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { scrollToTop } from '../../util.js';
-import { ProjectStates } from '../project/projectStatesHandler.js';
 import { Pressable } from 'react-native';
+import { useStore } from '@nanostores/react';
+import { navigate } from 'astro:transitions/client';
+import { $activeGroups, $filtering, $groupRequest } from '../../stores/site.js';
 
-const wipeScreen = (projectMask) => {
-    projectMask.style.backgroundPositionY = '-100vh';
-    projectMask.style.display = 'block';
-    projectMask.classList.remove('wipe');
-    projectMask.classList.add('wipe');
-}
+const isHomePage = () => window.location.pathname === '/';
 
-const closeAll = (setActiveIndex, setProjectStates) => {
-    setActiveIndex(null);
-    setProjectStates((prev) => prev.map((state, i) => ProjectStates.CLOSED));
-  }
-
-// group toggles are boolean: show every project whose group is active, sorted
-// newest-first so projects and experiments interweave by year.
-function filterProjectData(projectData, activeGroups) {
-	return projectData
-		.filter(project => activeGroups.includes(project.group))
-		.sort((a, b) => Number(b.year) - Number(a.year));
-}
-
-export function Footer({ projectData, setActiveIndex, setProjectStates, projectMaskRef, onFilterChange }) {
-  const [filtering, setFiltering] = useState(false);
-  // activeGroups drives the button look (updated instantly on click); appliedGroups
-  // drives the grid (updated under the wipe) so the button feels responsive.
-  const [activeGroups, setActiveGroups] = useState(['projects', 'experiments']);
-  const [appliedGroups, setAppliedGroups] = useState(['projects', 'experiments']);
+export function Footer() {
+  const activeGroups = useStore($activeGroups);
   const [footerOpen, setFooterOpen] = useState(true);
   const prevFooterOpen = useRef(false);
   const footerRef = useRef();
 
-  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-  useEffect(() => {
-    onFilterChange(filterProjectData(projectData, appliedGroups));
-  }, [appliedGroups, projectData, onFilterChange]);
-
   // clicking a category selects it exclusively (like tabs) — it never deselects.
-  const selectGroup = async (group) => {
-    if (filtering) return;
-    if (activeGroups.length === 1 && activeGroups[0] === group) return; // already sole selection
-
-    const next = [group];
-
-    setActiveGroups(next);        // instant button feedback
-    setFiltering(true);
-    closeAll(setActiveIndex, setProjectStates);
-    scrollToTop();
-
-    await delay(250);
-    wipeScreen(projectMaskRef.current);
-
-    await delay(150);
-    setAppliedGroups(next);       // grid swaps under the wipe
-
-    await delay(900);
-    projectMaskRef.current.style.display = 'none';
-    setFiltering(false);
-    scrollToTop();
+  // The homepage runs the wipe; from any other page, go home showing that group.
+  const selectGroup = (group) => {
+    if ($filtering.get()) {
+      return;
+    }
+    const current = $activeGroups.get();
+    const alreadySoleSelection = current.length === 1 && current[0] === group;
+    if (!alreadySoleSelection) {
+      $activeGroups.set([group]);
+      $groupRequest.set({ groups: [group] });
+    }
+    if (!isHomePage()) {
+      setFooterOpen(false);
+      navigate('/');
+    }
   };
 
   const toggleFooter = () => {
     setFooterOpen(prevFooterOpen => !prevFooterOpen);
   }
+
+  // the footer persists across page changes; tuck it away after each one
+  useEffect(() => {
+    const closeAfterNavigation = () => setFooterOpen(false);
+    document.addEventListener('astro:after-swap', closeAfterNavigation);
+    return () => {
+      document.removeEventListener('astro:after-swap', closeAfterNavigation);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -128,7 +104,7 @@ export function Footer({ projectData, setActiveIndex, setProjectStates, projectM
               <button
                 className={`filter-button ${activeGroups.includes('projects') ? 'active' : ''}`}
                 onClick={() => selectGroup('projects')}>
-                <img className="filter-button-image" src="project1.svg" alt="projects" />
+                <img className="filter-button-image" src="/project1.svg" alt="projects" />
               </button>
               <br/>
               <span className="filter-button-label">projects</span>
@@ -138,7 +114,7 @@ export function Footer({ projectData, setActiveIndex, setProjectStates, projectM
               <button
                 className={`filter-button ${activeGroups.includes('experiments') ? 'active' : ''}`}
                 onClick={() => selectGroup('experiments')}>
-                <img className="filter-button-image" src="experiment1.svg" alt="experiments" />
+                <img className="filter-button-image" src="/experiment1.svg" alt="experiments" />
               </button>
               <br/>
               <span className="filter-button-label">experiments</span>

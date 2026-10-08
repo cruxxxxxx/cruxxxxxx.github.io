@@ -159,7 +159,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
     <div style={{ position: 'relative'}}>
       {showStatic && (
         <img
-          src="static.webp"
+          src="/static.webp"
           alt="Static"
           style={{
             position: 'absolute',
