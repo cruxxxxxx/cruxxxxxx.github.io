@@ -5,9 +5,27 @@ import { navigate } from 'astro:transitions/client';
 import { $activeGroups, $filtering, $groupRequest } from '../../stores/site.js';
 
 const isHomePage = () => window.location.pathname === '/';
+const isBlogPath = (path) => path === '/blog' || path.startsWith('/blog/');
+
+// the frame persists across page changes, so track the current page ourselves
+function useCurrentPath() {
+  const [path, setPath] = useState(() => window.location.pathname);
+  useEffect(() => {
+    const updatePath = () => setPath(window.location.pathname);
+    document.addEventListener('astro:page-load', updatePath);
+    return () => {
+      document.removeEventListener('astro:page-load', updatePath);
+    };
+  }, []);
+  return path;
+}
 
 export function Footer() {
   const activeGroups = useStore($activeGroups);
+  const currentPath = useCurrentPath();
+  const onBlog = isBlogPath(currentPath);
+  // group buttons light up for what the homepage shows; blog lights up on blog pages
+  const isGroupLit = (group) => !onBlog && activeGroups.includes(group);
   // open on arrival at the homepage (it's the project menu); tucked away elsewhere
   const [footerOpen, setFooterOpen] = useState(isHomePage);
   const prevFooterOpen = useRef(false);
@@ -28,6 +46,13 @@ export function Footer() {
     if (!isHomePage()) {
       setFooterOpen(false);
       navigate('/');
+    }
+  };
+
+  const goToBlog = () => {
+    setFooterOpen(false);
+    if (window.location.pathname !== '/blog/') {
+      navigate('/blog/');
     }
   };
 
@@ -103,7 +128,7 @@ export function Footer() {
           <div className="buttons-container">
             <div id="first-button" className="button-container">
               <button
-                className={`filter-button ${activeGroups.includes('projects') ? 'active' : ''}`}
+                className={`filter-button ${isGroupLit('projects') ? 'active' : ''}`}
                 onClick={() => selectGroup('projects')}>
                 <img className="filter-button-image" src="/project1.svg" alt="projects" />
               </button>
@@ -113,12 +138,22 @@ export function Footer() {
 
             <div id="third-button" className="button-container">
               <button
-                className={`filter-button ${activeGroups.includes('experiments') ? 'active' : ''}`}
+                className={`filter-button ${isGroupLit('experiments') ? 'active' : ''}`}
                 onClick={() => selectGroup('experiments')}>
                 <img className="filter-button-image" src="/experiment1.svg" alt="experiments" />
               </button>
               <br/>
               <span className="filter-button-label">experiments</span>
+            </div>
+
+            <div className="button-container">
+              <button
+                className={`filter-button ${onBlog ? 'active' : ''}`}
+                onClick={goToBlog}>
+                <img className="filter-button-image" src="/project1.svg" alt="blog" />
+              </button>
+              <br/>
+              <span className="filter-button-label">blog</span>
             </div>
           </div>
 
@@ -126,8 +161,6 @@ export function Footer() {
 
 
           <span>
-            <a className="urls" href="/blog/">blog</a>
-            {' · '}
             <a className="urls" href="mailto:contact@hypnotize.works">contact</a>
           </span>
         </div>
