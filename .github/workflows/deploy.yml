@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+# Builds hypnotize.works (homepage + blog) with Astro. Blog posts live in
+# cruxxxxxx/blog (an Obsidian vault); a push there sends a `blog-updated`
+# dispatch so the site rebuilds with the new posts.
+on:
+  push:
+    branches: [master]
+  repository_dispatch:
+    types: [blog-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out blog posts
+        uses: actions/checkout@v4
+        with:
+          repository: cruxxxxxx/blog
+          path: .blog-content
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,97 @@
+name: Publish media and rebuild hypnotize.works
+
+# This repo is content only (the Obsidian vault). The site itself is built
+# and deployed from cruxxxxxx/cruxxxxxx.github.io, which checks these posts
+# out at build time. On push: publish phone media to R2, then ask the site to
+# rebuild.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: true
+
+jobs:
+  # Photos/videos committed from the phone land raw in Blogs/inbox/. Publish
+  # them to R2, rewrite the notes, and commit that back before the site
+  # rebuilds. (A push made with GITHUB_TOKEN does not start another run; the
+  # site's build checks out main afterwards, so it gets the rewritten notes.)
+  media:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      privacy_issues: ${{ steps.process.outputs.privacy_issues }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - id: inbox
+        name: Check the inbox
+        run: |
+          if [ -n "$(find Blogs/inbox -type f ! -name '.*' 2>/dev/null)" ]; then
+            echo "has_media=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.inbox.outputs.has_media == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libimage-exiftool-perl libheif-examples ffmpeg
+          npm ci
+
+      - id: process
+        if: steps.inbox.outputs.has_media == 'true'
+        name: Publish inbox media to R2
+        env:
+          R2_KEY: ${{ secrets.R2_KEY }}
+          R2_SECRET: ${{ secrets.R2_SECRET }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC: ${{ secrets.R2_PUBLIC }}
+        run: node bin/process-media.mjs
+
+      - if: steps.inbox.outputs.has_media == 'true'
+        name: Commit rewritten notes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898499+github-actions[bot]@users.noreply.github.com"
+          git add -A Blogs
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "media: publish inbox uploads to R2"
+          # the phone may have pushed again meanwhile
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+  # Rebuild the site with the new posts (after the media commit, if any).
+  notify-site:
+    needs: media
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask hypnotize.works to rebuild
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+        run: gh api repos/cruxxxxxx/cruxxxxxx.github.io/dispatches -f event_type=blog-updated
+
+  # The repo is public: a raw photo with GPS or camera metadata is now in git
+  # history. The site still rebuilds, but this goes red (and GitHub emails you).
+  privacy-check:
+    needs: media
+    if: needs.media.outputs.privacy_issues != ''
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          PRIVACY_ISSUES: ${{ needs.media.outputs.privacy_issues }}
+        run: |
+          echo "::error::Raw media with private data reached git history: $PRIVACY_ISSUES"
+          echo "See README > Posting from your phone > If a photo slipped through."
+          exit 1
