@@ -48,6 +48,12 @@
   border-radius: 50%;
 }
 
+/* blog reuses the projects icon for now, inverted so the two read apart */
+.filter-button-image.inverted {
+  filter: invert(1);
+  border-color: black;
+}
+
 .filter-button-label {
   font-size: 1em;
   padding-left: 0.5em;

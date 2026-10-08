@@ -150,7 +150,7 @@ export function Footer() {
               <button
                 className={`filter-button ${onBlog ? 'active' : ''}`}
                 onClick={goToBlog}>
-                <img className="filter-button-image" src="/project1.svg" alt="blog" />
+                <img className="filter-button-image inverted" src="/project1.svg" alt="blog" />
               </button>
               <br/>
               <span className="filter-button-label">blog</span>
