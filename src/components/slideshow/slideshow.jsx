@@ -1,8 +1,14 @@
 import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef } from 'react';
-import Carousel from 'react-multi-carousel';
+import CarouselModule from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
-import ReactPlayer from 'react-player/lazy'
-import MioPlayerWrapper from '../mio/mioPlayerWrapper.js';
+import ReactPlayerModule from 'react-player/lazy';
+import MioPlayerWrapper from '../mio/mioPlayerWrapper.jsx';
+
+// react-multi-carousel and react-player are CommonJS flagged __esModule; under
+// Vite the default import is the whole module object, so unwrap it (CRA's
+// webpack did this implicitly).
+const Carousel = CarouselModule.default ?? CarouselModule;
+const ReactPlayer = ReactPlayerModule.default ?? ReactPlayerModule;
 
 const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLoaded }, ref) => {
   const [loaded, setLoaded] = useState(new Array(mediaSrcs.length).fill(false));

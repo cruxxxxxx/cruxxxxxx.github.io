@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ProjectStates, ProjectStateHandler } from './projectStatesHandler';
-import Slideshow from '../slideshow/slideshow.js';
-import { OpenMark } from '../openmark/openmark.js';
+import { ProjectStates, ProjectStateHandler } from './projectStatesHandler.js';
+import Slideshow from '../slideshow/slideshow.jsx';
+import { OpenMark } from '../openmark/openmark.jsx';
 
 function ProjectComponent(props) {
   const { project, state, onClose, onMediaLoaded, startAnimationTime } = props;

@@ -1,0 +1,9 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import HomeApp from '../HomeApp.jsx';
+---
+
+<SiteLayout>
+  <HomeApp client:only="react" />
+  <noscript>You need to enable JavaScript to see the projects.</noscript>
+</SiteLayout>

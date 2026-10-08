@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import ReactDOM from 'react-dom/client';
 import './index.css';
 import './components/project/project.css';
 import './components/slideshow/slideshow.css';
@@ -11,12 +10,12 @@ import SiteData from './data/sitedata.json';
 import Experiments from './data/experiments.json';
 
 import { ProjectStates } from './components/project/projectStatesHandler.js';
-import { Project } from './components/project/project.js';
-import { Header } from './components/header/header.js';
-import { Footer } from './components/footer/footer.js';
+import { Project } from './components/project/project.jsx';
+import { Header } from './components/header/header.jsx';
+import { Footer } from './components/footer/footer.jsx';
 import { Pressable } from 'react-native';
 import LoadingBar from 'react-top-loading-bar'
-import WebGLCanvas from './components/moire/moire.js';
+import WebGLCanvas from './components/moire/moire.jsx';
 
 import { useProjectState, useLoadingState } from './hooks/index_hooks.js';
 import { usePressableCallbacks } from './hooks/project_pressable_hooks.js';
@@ -208,5 +207,4 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+export default App;
