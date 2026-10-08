@@ -27,3 +27,6 @@ dist/
 .astro/
 # blog content checkout (CI) / symlink (local)
 .blog-content
+
+# phone copies of videos: 89 MB, hosting not decided yet (repo vs R2)
+public/mobile/*.mp4

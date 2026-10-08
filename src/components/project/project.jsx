@@ -3,8 +3,19 @@ import { ProjectStates, ProjectStateHandler } from './projectStatesHandler.js';
 import Slideshow from '../slideshow/slideshow.jsx';
 import { OpenMark } from '../openmark/openmark.jsx';
 
+const MARGIN_FIELDS = [
+  'marginTopOpen', 'marginBottomOpen',
+  'marginTopClose', 'marginBottomClose',
+  'marginTopHover', 'marginBottomHover',
+];
+
+const MARGIN_SUFFIX_FOR_STATE = {
+  [ProjectStates.OPEN]: 'Open',
+  [ProjectStates.HOVER_IN]: 'Hover',
+};
+
 function ProjectComponent(props) {
-  const { project, state, onClose, onMediaLoaded, startAnimationTime } = props;
+  const { project, state, editing, onClose, onMediaLoaded, startAnimationTime } = props;
 
   const outerProject = useRef();
   const innerProject = useRef();
@@ -52,6 +63,26 @@ function ProjectComponent(props) {
 
     prevState.current = state;
   }, [state]);
+
+  // project editor: margin sliders restyle the card in place, without
+  // replaying the open/hover animation on every tick
+  const marginValues = MARGIN_FIELDS.map((field) => project[field]).join('|');
+  const isFirstMarginRender = useRef(true);
+  useEffect(() => {
+    if (isFirstMarginRender.current) {
+      isFirstMarginRender.current = false;
+      return;
+    }
+    if (!editing) {
+      return;
+    }
+    const innerProjectElem = innerProject.current;
+    const suffix = MARGIN_SUFFIX_FOR_STATE[state] ?? 'Close';
+    innerProjectElem.classList.remove('margin-change', 'margin-hover', 'margin-revert');
+    innerProjectElem.style.marginTop = project[`marginTop${suffix}`];
+    innerProjectElem.style.marginBottom = project[`marginBottom${suffix}`];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marginValues]);
 
   useEffect(() => {
     const lineContainer = lineContainerRef.current;
@@ -163,6 +194,7 @@ function ProjectComponent(props) {
 // behaviorally stable per index, so only re-render on meaningful prop changes.
 export const Project = React.memo(ProjectComponent, (prev, next) =>
   prev.state === next.state &&
+  prev.editing === next.editing &&
   prev.startAnimationTime === next.startAnimationTime &&
   prev.project === next.project
 );

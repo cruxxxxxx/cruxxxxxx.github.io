@@ -3,10 +3,14 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import { satteri } from '@astrojs/markdown-satteri';
 import imgAttrs from './src/blog/lib/img-attrs-plugin.mjs';
+import projectEditor, { mediaVariantsCheck } from './src/editor/integration.mjs';
 
 export default defineConfig({
   site: 'https://hypnotize.works',
-  integrations: [react(), sitemap()],
+  // projectEditor only hooks into `astro dev`; the deployed site never has it
+  integrations: [react(), sitemap(), projectEditor(), mediaVariantsCheck()],
+  // the dev toolbar sits right on top of the footer's caret
+  devToolbar: { enabled: false },
   // blog posts: Obsidian-style media sizes and video links (see the plugin)
   markdown: {
     shikiConfig: { theme: 'github-dark', wrap: true },

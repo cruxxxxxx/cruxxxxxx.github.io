@@ -33,3 +33,8 @@
 .react-multiple-carousel__arrow::before {
   font-size: 25px;
 }
+
+/* <picture> wrapper for mobile copies: lay out as if only the <img> existed */
+.responsive-media {
+  display: contents;
+}

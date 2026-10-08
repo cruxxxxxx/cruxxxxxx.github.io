@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 // site-wide styles (index.css, footer.css) come from SiteLayout
 import './components/project/project.css';
 import './components/slideshow/slideshow.css';
@@ -15,6 +15,7 @@ import LoadingBar from 'react-top-loading-bar'
 import { useStore } from '@nanostores/react';
 import { $activeGroups, $filtering, $groupRequest } from './stores/site.js';
 import { scrollToTop } from './util.js';
+import { $editorDraft, $editorPreview } from './editor/store.js';
 
 import { useProjectState, useLoadingState } from './hooks/index_hooks.js';
 import { usePressableCallbacks } from './hooks/project_pressable_hooks.js';
@@ -27,13 +28,35 @@ getIsThis } from './homepage_utils.js';
 
 const projectData = [...SiteData['projects'], ...Experiments['projects']];
 
+const byYearDesc = (a, b) => Number(b.year) - Number(a.year);
+
 // group toggles are boolean: show every project whose group is active, sorted
 // newest-first so projects and experiments interweave by year.
 function filterProjectData(activeGroups) {
   return projectData
     .filter(project => activeGroups.includes(project.group))
-    .sort((a, b) => Number(b.year) - Number(a.year));
+    .sort(byYearDesc);
 }
+
+// Project editor (dev only): show the unsaved draft in place of the saved
+// project, or as an extra card when it's new.
+function withEditorDraft(projects, draft) {
+  if (!draft) {
+    return projects;
+  }
+  const { originalName, project } = draft;
+  const shown = projects.map((saved) => (saved.name === originalName ? project : saved));
+  if (!shown.includes(project)) {
+    shown.push(project);
+  }
+  return shown.sort(byYearDesc);
+}
+
+const PREVIEW_STATES = {
+  closed: ProjectStates.CLOSED,
+  hover: ProjectStates.HOVER_IN,
+  open: ProjectStates.OPEN,
+};
 
 const wipeScreen = (projectMask) => {
   projectMask.style.backgroundPositionY = '-100vh';
@@ -65,6 +88,14 @@ function App() {
   const { loaded, setLoaded, progress, setProgress, startAnimation, setStartAnimation } = useLoadingState(projectData);
   // a footer click on another page may already have picked a group
   const [filteredProjects, setFilteredProjects] = useState(() => filterProjectData($activeGroups.get()));
+  const editorDraft = useStore($editorDraft);
+  const editorPreview = useStore($editorPreview);
+  const isEditing = editorDraft !== null;
+  const displayedProjects = useMemo(
+    () => withEditorDraft(filteredProjects, editorDraft),
+    [filteredProjects, editorDraft],
+  );
+  const editedIndex = isEditing ? displayedProjects.indexOf(editorDraft.project) : -1;
   // the initial loading bar / mask only gates the first paint; filter changes
   // afterward must not re-trigger it.
   const [firstLoadComplete, setFirstLoadComplete] = useState(hasLoadedOnce);
@@ -78,6 +109,39 @@ function App() {
   useEffect(() => {
     setProjectStates(projectData.map(() => ProjectStates.CLOSED));
   }, [setProjectStates]);
+
+  // a new project in the editor adds a card beyond the saved ones
+  useEffect(() => {
+    if (projectStates.length < displayedProjects.length) {
+      setProjectStates((prev) => [
+        ...prev,
+        ...new Array(displayedProjects.length - prev.length).fill(ProjectStates.CLOSED),
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayedProjects.length]);
+
+  // the editor's closed / hover / open buttons drive the edited card
+  useEffect(() => {
+    if (editedIndex < 0) {
+      return;
+    }
+    setActiveIndex(editorPreview === 'open' ? editedIndex : null);
+    setProjectStates((prev) => prev.map((state, i) =>
+      (i === editedIndex ? PREVIEW_STATES[editorPreview] : ProjectStates.CLOSED)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedIndex, editorPreview]);
+
+  // bring the card into view when the editor picks a project
+  const editedName = editorDraft?.originalName;
+  useEffect(() => {
+    if (editedIndex < 0) {
+      return;
+    }
+    const card = columnRef.current?.querySelectorAll('.outer-project')?.[editedIndex];
+    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedName, editedIndex < 0]);
 
   // returning from another page: skip the loading gate, just run the intro
   useEffect(() => {
@@ -141,7 +205,7 @@ function App() {
     const isThis = getIsThis(index);
     mapProjectStates(setProjectStates,
       (state, i) => isThis(i) ? (state === ProjectStates.OPEN ? ProjectStates.CLOSED : ProjectStates.OPEN) : ProjectStates.CLOSED);
-    setProjectHash(opening ? filteredProjects[index] : null);
+    setProjectHash(opening ? displayedProjects[index] : null);
   };
 
   const closeProject = (index) => {
@@ -227,18 +291,19 @@ function App() {
         <div className="row">
           <div id="projects" className="column" ref={columnRef}>
             <div ref={projectMaskRef} id="projectMask" className="white-background"></div>
-            {filteredProjects.map((project, index) => (
+            {displayedProjects.map((project, index) => (
               <Pressable
-                key={project.name}
-                onPressIn={(event) => onPressIn(event, index)}
-                onPressOut={(event) => onPressOut(event, index)}
-                onHoverIn={(event) => onHoverIn(event, index)}
-                onHoverOut={(event) => onHoverOut(event, index)}
-                disabled={projectStates[index] === ProjectStates.OPEN}>
+                key={index === editedIndex ? 'editor-draft' : project.name}
+                onPressIn={(event) => !isEditing && onPressIn(event, index)}
+                onPressOut={(event) => !isEditing && onPressOut(event, index)}
+                onHoverIn={(event) => !isEditing && onHoverIn(event, index)}
+                onHoverOut={(event) => !isEditing && onHoverOut(event, index)}
+                disabled={isEditing || projectStates[index] === ProjectStates.OPEN}>
                 <Project 
                   project={project} 
-                  state={projectStates[index]} 
-                  onClose={() => closeProject(index)}
+                  state={projectStates[index] ?? ProjectStates.CLOSED} 
+                  editing={index === editedIndex}
+                  onClose={() => !isEditing && closeProject(index)}
                   onMediaLoaded={() => onMediaLoaded(index)}
                   startAnimationTime={getAnimationStartTime(startAnimation, index)}/>
               </Pressable>

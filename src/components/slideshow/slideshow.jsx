@@ -3,6 +3,7 @@ import CarouselModule from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
 import ReactPlayerModule from 'react-player/lazy';
 import MioPlayerWrapper from '../mio/mioPlayerWrapper.jsx';
+import { ResponsiveImage, videoSourceFor } from './responsiveMedia.jsx';
 
 // react-multi-carousel and react-player are CommonJS flagged __esModule; under
 // Vite the default import is the whole module object, so unwrap it (CRA's
@@ -98,7 +99,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
       return (
         <video
           className={`mySlides ${loaded[index] ? 'fade-in' : 'fade-out'}`}
-          src={poster}
+          src={videoSourceFor(poster)}
           muted
           loop
           autoPlay
@@ -110,7 +111,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
       );
     }
     return (
-      <img
+      <ResponsiveImage
         className={`mySlides ${loaded[index] ? 'fade-in' : 'fade-out'}`}
         src={poster}
         alt={projectName}
@@ -194,7 +195,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
           return (
             <div key={index}>
               {mediaType === 'image' ? (
-                <img
+                <ResponsiveImage
                   className={`mySlides ${loaded[index] ? 'fade-in' : 'fade-out'}`}
                   src={src}
                   alt={projectName}
@@ -222,7 +223,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
                     controls={isProjectOpen}
                     height='200%' width='100%'
                     volume={0.2}
-                    url={src}
+                    url={mediaType === 'video' ? videoSourceFor(src) : src}
                     playing={index === slideIndex && isProjectOpen}
                     onReady={() => {
                       handleLoad(index);
@@ -238,7 +239,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
                     }}
                   />
                   {poster && !['mp4', 'webm'].includes(poster.split('.').pop().toLowerCase()) && !videoStarted[index] && (
-                    <img
+                    <ResponsiveImage
                       src={poster}
                       alt={projectName}
                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 2, pointerEvents: 'none' }}
