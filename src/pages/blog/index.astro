@@ -1,10 +1,13 @@
 ---
-import SiteLayout from '../../layouts/SiteLayout.astro';
+import BlogLayout from '../../blog/BlogLayout.astro';
+import PostList from '../../blog/components/PostList.astro';
+import { getPublishedPosts } from '../../blog/lib/posts';
+
+const posts = await getPublishedPosts();
 ---
 
-<SiteLayout title="blog">
-  <main style="width:min(60vh,100%);margin:0 auto;background:rgba(255,255,255,.8);min-height:100vh;padding:2em 1em">
-    <h1>blog placeholder</h1>
-    <p>phase 2 frame test. <a href="/">home</a></p>
-  </main>
-</SiteLayout>
+<BlogLayout>
+  {posts.length === 0
+    ? <p class="note">nothing yet.</p>
+    : <PostList posts={posts} />}
+</BlogLayout>

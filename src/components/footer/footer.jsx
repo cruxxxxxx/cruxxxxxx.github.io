@@ -8,7 +8,8 @@ const isHomePage = () => window.location.pathname === '/';
 
 export function Footer() {
   const activeGroups = useStore($activeGroups);
-  const [footerOpen, setFooterOpen] = useState(true);
+  // open on arrival at the homepage (it's the project menu); tucked away elsewhere
+  const [footerOpen, setFooterOpen] = useState(isHomePage);
   const prevFooterOpen = useRef(false);
   const footerRef = useRef();
 

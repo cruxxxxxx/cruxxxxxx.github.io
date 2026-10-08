@@ -1,0 +1,51 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { href } from './lib/url';
+import './blog.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+}
+
+const { title = 'blog', description, image, type } = Astro.props;
+const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
+---
+
+<SiteLayout title={title} description={description} image={image} type={type}>
+  <main class="blog">
+    {!isBlogHome && <a class="blog-back" href={href('/')}>&larr; blog</a>}
+    <slot />
+
+    {/* click a photo to see it large; Escape, a click or a tap closes it */}
+    <dialog class="lightbox" aria-label="enlarged photo">
+      <img alt="" />
+    </dialog>
+  </main>
+</SiteLayout>
+
+<script>
+  // Bundled module: runs once per visit, even across client-side page swaps,
+  // so one delegated listener serves every blog page's photos.
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const lightbox = document.querySelector<HTMLDialogElement>('.blog .lightbox');
+    if (!lightbox) {
+      return;
+    }
+    if (target.closest('.lightbox')) {
+      lightbox.close();
+      return;
+    }
+    const photo = target.closest<HTMLImageElement>('.post-body img');
+    if (!photo || photo.closest('a')) {
+      return;
+    }
+    const enlarged = lightbox.querySelector('img')!;
+    enlarged.src = photo.currentSrc || photo.src;
+    enlarged.alt = photo.alt;
+    lightbox.showModal();
+  });
+</script>

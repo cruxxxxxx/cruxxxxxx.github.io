@@ -1,0 +1,45 @@
+---
+import { render } from 'astro:content';
+import { formatMonthYear, formatDayMonthYear, isNote, type Post } from '../lib/posts';
+import { href } from '../lib/url';
+
+interface Props {
+  posts: Post[];
+}
+
+const { posts } = Astro.props;
+
+// Notes show their whole body inline, so render those up front.
+const entries = await Promise.all(
+  posts.map(async (post) => ({
+    post,
+    Content: isNote(post) ? (await render(post)).Content : null,
+  })),
+);
+---
+
+<ul class="post-list">
+  {entries.map(({ post, Content }) => (
+    Content ? (
+      <li class="note-entry">
+        <a class="date" href={href(`/${post.id}`)}>
+          <time datetime={post.data.pubDate.toISOString()}>{formatDayMonthYear(post.data.pubDate)}</time>
+          {post.data.draft && <span class="draft-mark"> draft</span>}
+        </a>
+        <div class="post-body note-body">
+          <Content />
+        </div>
+      </li>
+    ) : (
+      <li>
+        <a href={href(`/${post.id}`)}>
+          <time class="date" datetime={post.data.pubDate.toISOString()}>
+            {formatMonthYear(post.data.pubDate)}
+          </time>
+          <span class="post-list-title">{post.data.title}</span>
+          {post.data.draft && <span class="draft-mark">draft</span>}
+        </a>
+      </li>
+    )
+  ))}
+</ul>

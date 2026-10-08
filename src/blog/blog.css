@@ -1,0 +1,172 @@
+/*
+  Blog pages inside the hypnotize.works frame: the same centred translucent
+  column as the homepage, over the moiré. Sizes follow the site's --base
+  (column-relative, see index.css); running text never drops below 13px.
+  Everything is scoped to .blog so none of it reaches the homepage.
+*/
+
+.blog {
+  --blog-text: max(calc(var(--base) * 0.8), 13px);
+  --muted: #777;
+
+  box-sizing: border-box;
+  width: min(60vh, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: calc(var(--base) * 2.5) calc(var(--base) * 1.25) calc(var(--base) * 8);
+  background: rgba(255, 255, 255, 0.8);
+  color: #000;
+  font: var(--blog-text)/1.6 "Hiragino Kaku Gothic ProN W3", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.blog *,
+.blog *::before,
+.blog *::after { box-sizing: border-box; }
+
+.blog a { color: inherit; text-decoration: none; }
+.blog a:hover { text-decoration: underline; }
+
+.blog-back {
+  display: inline-block;
+  margin-bottom: calc(var(--base) * 2.5);
+}
+
+/* ── lists ─────────────────────────────────────────── */
+.blog .post-list,
+.blog .tag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.blog .post-list li { margin: 0 0 calc(var(--base) * 2.25); }
+.blog .post-list a { display: block; }
+.blog .post-list a:hover { text-decoration: none; }
+.blog .post-list a:hover .post-list-title { opacity: .6; }
+.blog .post-list .date { display: block; margin-bottom: .2em; }
+.blog .post-list-title {
+  display: block;
+  font-family: 'arrayregular';
+  font-size: calc(var(--base) * 2.2);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+/* quick notes: date, then the whole note inline */
+.blog .post-list .note-entry { margin-bottom: calc(var(--base) * 3.5); }
+.blog .note-entry .date { margin-bottom: .75em; }
+.blog .note-entry .date:hover { text-decoration: underline; }
+.blog .note-body > :first-child { margin-top: 0; }
+.blog .note-body > :last-child { margin-bottom: 0; }
+
+.blog .tag-list li { margin: 0 0 1em; }
+.blog .count,
+.blog .draft-mark,
+.blog .updated { color: var(--muted); }
+
+.blog .page-label { margin: 0 0 calc(var(--base) * 2.5); }
+.blog .note { margin: 0; }
+
+/* ── article ───────────────────────────────────────── */
+.blog .post-head { margin-bottom: calc(var(--base) * 2.5); }
+.blog .post-head .date { display: block; margin-bottom: 1.25em; }
+.blog .post-head h1 {
+  font-family: 'arrayregular';
+  font-weight: normal;
+  font-size: calc(var(--base) * 3);
+  line-height: 1.05;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.blog .post-description { margin: 1.25em 0 0; }
+
+.blog .post-body h2,
+.blog .post-body h3 {
+  font-family: 'arrayregular';
+  font-weight: normal;
+  font-size: calc(var(--base) * 1.6);
+  line-height: 1.1;
+  margin: 2.5em 0 .75em;
+}
+.blog .post-body h3 { font-size: calc(var(--base) * 1.25); }
+.blog .post-body p { margin: 0 0 1.25em; }
+
+/* Photos fill the column unless a size was given (`![alt|400]`, `|60%`),
+   in which case they keep it and only shrink to fit. */
+.blog .post-body img,
+.blog .post-body video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 2em 0;
+}
+.blog .post-body img:not([width]):not([style]),
+.blog .post-body video:not([width]):not([style]) {
+  width: 100%;
+}
+.blog .post-body video { background: #000; }
+
+.blog .post-body blockquote {
+  margin: 1.5em 0;
+  padding-left: 1em;
+  border-left: 1px solid #000;
+}
+.blog .post-body code {
+  font: .9em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f2f2f2;
+  padding: .05em .3em;
+}
+.blog .post-body pre {
+  padding: .75em;
+  overflow-x: auto;
+  background: #f2f2f2;
+}
+.blog .post-body pre code { background: none; padding: 0; }
+.blog .post-body table { border-collapse: collapse; width: 100%; }
+.blog .post-body th,
+.blog .post-body td {
+  border-bottom: 1px solid #ddd;
+  padding: .3em .5em .3em 0;
+  text-align: left;
+}
+.blog .post-body ul,
+.blog .post-body ol { padding-left: 1.25em; }
+.blog .post-body a { text-decoration: underline; }
+
+.blog .post-foot { margin-top: calc(var(--base) * 3); }
+.blog .post-tags { display: flex; flex-wrap: wrap; gap: .75em; margin: 0 0 .5em; }
+.blog .post-tags a::before { content: '#'; }
+
+.blog .pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  margin-top: calc(var(--base) * 3);
+}
+
+/* ── lightbox ──────────────────────────────────────── */
+.blog .post-body img { cursor: zoom-in; }
+.blog .post-body a img { cursor: pointer; }
+
+.blog .lightbox {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-out;
+}
+.blog .lightbox[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.blog .lightbox::backdrop { background: rgba(255, 255, 255, .96); }
+.blog .lightbox img {
+  display: block;
+  max-width: 94vw;
+  max-height: 92vh;
+  object-fit: contain;
+}

@@ -1,0 +1,27 @@
+---
+import BlogLayout from '../../../blog/BlogLayout.astro';
+import PostList from '../../../blog/components/PostList.astro';
+import { getPublishedPosts, type Post } from '../../../blog/lib/posts';
+import { href } from '../../../blog/lib/url';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  const byTag = new Map<string, Post[]>();
+  for (const post of posts) {
+    for (const tag of post.data.tags) {
+      byTag.set(tag, [...(byTag.get(tag) ?? []), post]);
+    }
+  }
+  return [...byTag.entries()].map(([tag, tagged]) => ({
+    params: { tag },
+    props: { tag, posts: tagged },
+  }));
+}
+
+const { tag, posts } = Astro.props;
+---
+
+<BlogLayout title={tag}>
+  <p class="page-label"><a href={href('/tags')}>tags</a> / {tag}</p>
+  <PostList posts={posts} />
+</BlogLayout>

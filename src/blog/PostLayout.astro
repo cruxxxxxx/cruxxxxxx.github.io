@@ -1,0 +1,53 @@
+---
+import BlogLayout from './BlogLayout.astro';
+import { formatMonthYear, formatDayMonthYear, isNote, postLabel, type Post } from './lib/posts';
+import { href } from './lib/url';
+import { isVideoUrl, posterUrlFor, previewImageFor, sizeProperties } from './lib/media.mjs';
+
+interface Props {
+  post: Post;
+  prev?: Post;
+  next?: Post;
+}
+
+const { post, prev, next } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, cover, coverAlt, coverWidth, draft } = post.data;
+
+// A video cover plays in place; og:image and the feed still need a still.
+const coverIsVideo = isVideoUrl(cover);
+const coverSize = sizeProperties(coverWidth);
+const note = isNote(post);
+---
+
+<BlogLayout title={postLabel(post)} description={description} image={previewImageFor(cover)} type="article">
+  <article>
+    <header class="post-head">
+      <time class="date" datetime={pubDate.toISOString()}>
+        {note ? formatDayMonthYear(pubDate) : formatMonthYear(pubDate)}
+      </time>
+      {title && <h1>{title}{draft && <span class="draft-mark"> draft</span>}</h1>}
+      {description && <p class="post-description">{description}</p>}
+    </header>
+
+    <div class="post-body">
+      {cover && (coverIsVideo
+        ? <video src={cover} poster={posterUrlFor(cover)} controls preload="none" playsinline {...coverSize} />
+        : <img src={cover} alt={coverAlt} loading="eager" decoding="async" {...coverSize} />)}
+      <slot />
+    </div>
+
+    <footer class="post-foot">
+      {tags.length > 0 && (
+        <p class="post-tags">
+          {tags.map((tag) => <a href={href(`/tags/${tag}`)}>{tag}</a>)}
+        </p>
+      )}
+      {updatedDate && <p class="updated">updated {formatMonthYear(updatedDate)}</p>}
+    </footer>
+
+    <nav class="pager">
+      {next ? <a href={href(`/${next.id}`)}>&larr; {postLabel(next)}</a> : <span>&nbsp;</span>}
+      {prev ? <a href={href(`/${prev.id}`)}>{postLabel(prev)} &rarr;</a> : <span>&nbsp;</span>}
+    </nav>
+  </article>
+</BlogLayout>
