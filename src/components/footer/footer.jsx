@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Pressable } from 'react-native';
 import { useStore } from '@nanostores/react';
 import { navigate } from 'astro:transitions/client';
 import { $activeGroups, $filtering, $groupRequest } from '../../stores/site.js';
@@ -7,9 +6,10 @@ import { $activeGroups, $filtering, $groupRequest } from '../../stores/site.js';
 const isHomePage = () => window.location.pathname === '/';
 const isBlogPath = (path) => path === '/blog' || path.startsWith('/blog/');
 
-// the frame persists across page changes, so track the current page ourselves
-function useCurrentPath() {
-  const [path, setPath] = useState(() => window.location.pathname);
+// the frame persists across page changes, so track the current page ourselves;
+// it starts from the server's path so the server render and hydration agree
+function useCurrentPath(initialPath) {
+  const [path, setPath] = useState(initialPath);
   useEffect(() => {
     const updatePath = () => setPath(window.location.pathname);
     document.addEventListener('astro:page-load', updatePath);
@@ -20,14 +20,14 @@ function useCurrentPath() {
   return path;
 }
 
-export function Footer() {
+export function Footer({ initialPath }) {
   const activeGroups = useStore($activeGroups);
-  const currentPath = useCurrentPath();
+  const currentPath = useCurrentPath(initialPath);
   const onBlog = isBlogPath(currentPath);
   // group buttons light up for what the homepage shows; blog lights up on blog pages
   const isGroupLit = (group) => !onBlog && activeGroups.includes(group);
   // open on arrival at the homepage (it's the project menu); tucked away elsewhere
-  const [footerOpen, setFooterOpen] = useState(isHomePage);
+  const [footerOpen, setFooterOpen] = useState(initialPath === '/');
   const prevFooterOpen = useRef(false);
   const footerRef = useRef();
 
@@ -109,7 +109,9 @@ export function Footer() {
   return (
     <div ref={footerRef} className="outside-footer">
       <div className="footer-arrow-container">
-        <Pressable onPress={toggleFooter}>
+        {/* a plain button, not react-native's Pressable: the footer renders
+            on the server, and react-native-web can't run there in dev */}
+        <button type="button" className="footer-caret-button" onClick={toggleFooter}>
           {/* two strokes sharing the vertex; they fan through flat into
               ^ (collapsed) or V (expanded) */}
           <svg
@@ -119,7 +121,7 @@ export function Footer() {
             <line className="footer-caret-line left" x1="6" y1="13" x2="22" y2="13" />
             <line className="footer-caret-line right" x1="22" y1="13" x2="38" y2="13" />
           </svg>
-        </Pressable>
+        </button>
       </div>
 
       <div className="footer-line"></div>

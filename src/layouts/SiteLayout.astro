@@ -58,8 +58,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body>
     <Moire client:only="react" transition:persist="moire" />
-    <Header client:only="react" transition:persist="header" />
+    {/* header and footer render on the server so they paint with the page;
+        the footer tracks later page changes itself, hence persist-props */}
+    <Header client:load transition:persist="header" />
     <slot />
-    <Footer client:only="react" transition:persist="footer" />
+    <Footer client:load initialPath={Astro.url.pathname} transition:persist="footer" transition:persist-props />
   </body>
 </html>

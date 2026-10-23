@@ -162,6 +162,15 @@
 }
 /* toggle caret: an SVG whose two strokes share the vertex, so the join is sharp
    (no overlap blob). They fan through flat into ^ (collapsed) or V (expanded). */
+.footer-caret-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
 .footer-caret {
   width: 1.3em;
   height: 0.8em;
