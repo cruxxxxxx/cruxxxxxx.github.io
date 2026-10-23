@@ -123,10 +123,25 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
     frame.append(iframe);
   }
 
+  // Measurements go on <html>, but each page swap replaces its attributes
+  // (style included) with the new page's, so they're re-applied after it.
+  const rootVariables = new Map<string, string>();
+
+  function setRootVariable(name: string, value: string) {
+    rootVariables.set(name, value);
+    document.documentElement.style.setProperty(name, value);
+  }
+
+  document.addEventListener('astro:after-swap', () => {
+    for (const [name, value] of rootVariables) {
+      document.documentElement.style.setProperty(name, value);
+    }
+  });
+
   // the column's top padding leaves room for the collapsed strip
   const stripHeightWatcher = new ResizeObserver(([entry]) => {
     const stripHeight = entry.target.getBoundingClientRect().height;
-    document.documentElement.style.setProperty('--playlist-strip-height', `${stripHeight}px`);
+    setRootVariable('--playlist-strip-height', `${stripHeight}px`);
   });
 
   // The strip hangs from the header, whose height changes (it shrinks on
@@ -134,7 +149,7 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
   // navigations, so it only has to be found once.
   const headerWatcher = new ResizeObserver(([entry]) => {
     const headerHeight = entry.target.getBoundingClientRect().height;
-    document.documentElement.style.setProperty('--playlist-top', `${headerHeight}px`);
+    setRootVariable('--playlist-top', `${headerHeight}px`);
   });
   const headerFinder = new MutationObserver(() => findHeader());
   headerFinder.observe(document.documentElement, { childList: true, subtree: true });
