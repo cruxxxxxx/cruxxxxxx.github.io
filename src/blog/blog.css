@@ -170,3 +170,87 @@
   max-height: 92vh;
   object-fit: contain;
 }
+
+/* ── playlist ──────────────────────────────────────────
+   A translucent strip hanging from the header at column width; it opens
+   the player over the column. It sits outside <body> so it survives page
+   changes (see BlogLayout.astro), hence it can't be scoped to .blog and
+   carries its own type. */
+:root { --playlist-gap: 2px; } /* below the header; the column pads for it too */
+
+#blog-playlist {
+  --playlist-opacity: 0.25;
+  --playlist-blur: 8px;
+  --playlist-corner: 13px;
+
+  position: fixed;
+  top: calc(var(--playlist-top, calc(var(--base) * 4)) + var(--playlist-gap));
+  left: 0;
+  right: 0;
+  z-index: 9998; /* just under the header */
+  box-sizing: border-box;
+  width: min(60vh, 100%);
+  margin: 0 auto;
+  background: rgba(0, 0, 0, var(--playlist-opacity));
+  -webkit-backdrop-filter: blur(var(--playlist-blur));
+  backdrop-filter: blur(var(--playlist-blur));
+  color: #fff;
+  font: max(calc(var(--base) * 0.8), 13px)/1.6 "Hiragino Kaku Gothic ProN W3", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  border-radius: 0 0 var(--playlist-corner) var(--playlist-corner);
+
+  /* tucked under the header until the page has loaded */
+  transform: translateY(calc(-100% - var(--playlist-gap)));
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#blog-playlist.shown { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  #blog-playlist { transition: none; }
+}
+
+#blog-playlist .playlist-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: calc(var(--base) * 0.35) calc(var(--base) * 1.25);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+#blog-playlist .playlist-toggle:hover { opacity: .7; }
+#blog-playlist .playlist-arrow::before { content: '▾'; }
+#blog-playlist.expanded .playlist-arrow::before { content: '▴'; }
+
+/* collapsed = zero height, not display:none, so a playing embed keeps going */
+#blog-playlist .playlist-frame {
+  height: 0;
+  overflow: hidden;
+}
+#blog-playlist.expanded .playlist-frame {
+  height: auto;
+  padding: 0 calc(var(--base) * 0.5) calc(var(--base) * 0.5);
+}
+#blog-playlist iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+}
+
+/* room for the strip (its measured height, see BlogLayout.astro) above the
+   column's first line */
+.blog:has(.playlist-config) {
+  padding-top: calc(var(--base) * 2.5 + var(--playlist-gap)
+    + var(--playlist-strip-height, calc(var(--base) * 2)));
+}
+
+/* ── fade in ───────────────────────────────────────── */
+.blog { animation: blog-fade-in 0.6s ease both; }
+@keyframes blog-fade-in {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blog { animation: none; }
+}

@@ -1,6 +1,7 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { href } from './lib/url';
+import { SPOTIFY_PLAYLIST_ID } from './site';
 import './blog.css';
 
 interface Props {
@@ -16,6 +17,8 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
 
 <SiteLayout title={title} description={description} image={image} type={type}>
   <main class="blog">
+    {/* tells the script below to show the playlist strip on this page */}
+    {SPOTIFY_PLAYLIST_ID && <div class="playlist-config" hidden data-playlist-id={SPOTIFY_PLAYLIST_ID}></div>}
     {!isBlogHome && <a class="blog-back" href={href('/')}>&larr; blog</a>}
     <slot />
 
@@ -48,4 +51,138 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
     enlarged.alt = photo.alt;
     lightbox.showModal();
   });
+</script>
+
+<script>
+  // The playlist keeps playing while the visitor moves between blog pages.
+  // Client-side navigation replaces <body>, and moving an iframe reloads it,
+  // so the player lives outside <body> (a child of <html>), as a strip fixed
+  // under the header. It never moves; a page without .playlist-config
+  // removes it, which stops the music.
+  const PLAYER_ID = 'blog-playlist';
+  // theme=0 keeps the player grey instead of tinting it from the cover art
+  const embedUrlFor = (playlistId: string) =>
+    `https://open.spotify.com/embed/playlist/${playlistId}?theme=0`;
+
+  let player: HTMLElement | null = null;
+
+  function createPlayer(playlistId: string) {
+    const element = document.createElement('div');
+    element.id = PLAYER_ID;
+    element.innerHTML = `
+      <button type="button" class="playlist-toggle" aria-expanded="false">
+        <span>&#9835; playlist</span><span class="playlist-arrow" aria-hidden="true"></span>
+      </button>
+      <div class="playlist-frame" inert></div>`;
+    const toggle = element.querySelector<HTMLButtonElement>('.playlist-toggle')!;
+    toggle.addEventListener('click', () => toggleExpanded(element, toggle, playlistId));
+    stripHeightWatcher.observe(toggle);
+    return element;
+  }
+
+  // Collapsing only hides the frame: the iframe stays, so music keeps playing.
+  function toggleExpanded(element: HTMLElement, toggle: HTMLButtonElement, playlistId: string) {
+    const expanded = !element.classList.contains('expanded');
+    element.classList.toggle('expanded', expanded);
+    toggle.setAttribute('aria-expanded', String(expanded));
+    const frame = element.querySelector<HTMLElement>('.playlist-frame')!;
+    // a collapsed frame keeps the (playing) iframe out of the tab order
+    frame.inert = !expanded;
+    if (expanded) {
+      loadEmbedOnce(frame, playlistId);
+    }
+  }
+
+  // Load the embed in the background once the page has finished loading, so
+  // it's ready by the time the visitor opens it without delaying the post.
+  function preloadEmbedWhenIdle(element: HTMLElement, playlistId: string) {
+    const load = () => loadEmbedOnce(element.querySelector('.playlist-frame')!, playlistId);
+    const whenIdle = () => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(load, { timeout: 2000 });
+      } else {
+        setTimeout(load, 500);
+      }
+    };
+    if (document.readyState === 'complete') {
+      whenIdle();
+    } else {
+      window.addEventListener('load', whenIdle, { once: true });
+    }
+  }
+
+  function loadEmbedOnce(frame: Element, playlistId: string) {
+    if (frame.querySelector('iframe')) {
+      return;
+    }
+    const iframe = document.createElement('iframe');
+    iframe.src = embedUrlFor(playlistId);
+    iframe.title = 'Spotify playlist';
+    iframe.height = '352';
+    iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+    frame.append(iframe);
+  }
+
+  // the column's top padding leaves room for the collapsed strip
+  const stripHeightWatcher = new ResizeObserver(([entry]) => {
+    const stripHeight = entry.target.getBoundingClientRect().height;
+    document.documentElement.style.setProperty('--playlist-strip-height', `${stripHeight}px`);
+  });
+
+  // The strip hangs from the header, whose height changes (it shrinks on
+  // touch screens). The header is a client-only island that persists across
+  // navigations, so it only has to be found once.
+  const headerWatcher = new ResizeObserver(([entry]) => {
+    const headerHeight = entry.target.getBoundingClientRect().height;
+    document.documentElement.style.setProperty('--playlist-top', `${headerHeight}px`);
+  });
+  const headerFinder = new MutationObserver(() => findHeader());
+  headerFinder.observe(document.documentElement, { childList: true, subtree: true });
+  findHeader();
+
+  function findHeader() {
+    const header = document.getElementById('header');
+    if (!header) {
+      return;
+    }
+    headerFinder.disconnect();
+    headerWatcher.observe(header);
+  }
+
+  // The strip starts tucked under the header and slides out once the page
+  // has settled; leaving the blog slides it back under before removing it.
+  const SLIDE_IN_DELAY_MS = 300;
+  const SLIDE_DURATION_MS = 500; // matches the transition in blog.css
+
+  function slideIn(element: HTMLElement) {
+    setTimeout(() => element.classList.add('shown'), SLIDE_IN_DELAY_MS);
+  }
+
+  function slideOutAndRemove(element: HTMLElement) {
+    element.querySelector('iframe')?.remove(); // the music stops right away
+    element.classList.remove('expanded', 'shown');
+    setTimeout(() => element.remove(), SLIDE_DURATION_MS);
+  }
+
+  function syncPlayerWithPage() {
+    const config = document.querySelector<HTMLElement>('.blog .playlist-config');
+    if (!config) {
+      if (player) {
+        slideOutAndRemove(player);
+      }
+      player = null;
+      return;
+    }
+    if (!player) {
+      player = createPlayer(config.dataset.playlistId!);
+      document.documentElement.append(player);
+      slideIn(player);
+      preloadEmbedWhenIdle(player, config.dataset.playlistId!);
+    }
+  }
+
+  // after-swap: leave the blog without a flash of the old player;
+  // page-load: the first visit, and every navigation after it
+  document.addEventListener('astro:after-swap', syncPlayerWithPage);
+  document.addEventListener('astro:page-load', syncPlayerWithPage);
 </script>
