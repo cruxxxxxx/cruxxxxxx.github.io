@@ -1,0 +1,47 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import about from '../data/about.json';
+import '../blog/blog.css';
+
+// theme=0 keeps the player grey instead of tinting it from the cover art
+const playlistEmbedUrl = about.spotifyPlaylistId
+  ? `https://open.spotify.com/embed/playlist/${about.spotifyPlaylistId}?theme=0`
+  : null;
+---
+
+<SiteLayout title={about.title}>
+  <main class="blog about">
+    <img class="about-image" src={about.image.src} alt={about.image.alt} />
+    {about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+
+    {playlistEmbedUrl && (
+      <iframe
+        class="about-playlist"
+        src={playlistEmbedUrl}
+        title="Spotify playlist"
+        height="520"
+        loading="lazy"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      ></iframe>
+    )}
+  </main>
+</SiteLayout>
+
+<style>
+  /* the blog's column, with a portrait on top */
+  .about-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 calc(var(--base) * 2.5);
+  }
+  .about p { margin: 0 0 1.25em; }
+
+  .about-playlist {
+    display: block;
+    width: 100%;
+    margin-top: calc(var(--base) * 2.5);
+    border: 0;
+    border-radius: 12px;
+  }
+</style>

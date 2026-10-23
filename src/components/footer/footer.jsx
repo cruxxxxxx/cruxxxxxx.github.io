@@ -161,6 +161,8 @@ export function Footer() {
 
 
           <span>
+            <a className="urls" href="/about/">about</a>
+            {' · '}
             <a className="urls" href="mailto:contact@hypnotize.works">contact</a>
           </span>
         </div>
