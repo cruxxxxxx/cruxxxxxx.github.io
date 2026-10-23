@@ -220,17 +220,33 @@
   font: inherit;
 }
 #blog-playlist .playlist-toggle:hover { opacity: .7; }
+#blog-playlist .playlist-arrow {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
 #blog-playlist .playlist-arrow::before { content: '▾'; }
-#blog-playlist.expanded .playlist-arrow::before { content: '▴'; }
+#blog-playlist.expanded .playlist-arrow { transform: rotate(180deg); }
 
-/* collapsed = zero height, not display:none, so a playing embed keeps going */
+/* Opening slides the player down from under the strip: the grid row grows
+   from 0fr to 1fr. Collapsed is zero height, not display:none, so a playing
+   embed keeps going. */
 #blog-playlist .playlist-frame {
-  height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#blog-playlist.expanded .playlist-frame { grid-template-rows: 1fr; }
+#blog-playlist .playlist-frame-clip {
+  min-height: 0;
   overflow: hidden;
 }
-#blog-playlist.expanded .playlist-frame {
-  height: auto;
+#blog-playlist .playlist-frame-content {
   padding: 0 calc(var(--base) * 0.5) calc(var(--base) * 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #blog-playlist .playlist-frame,
+  #blog-playlist .playlist-arrow { transition: none; }
 }
 #blog-playlist iframe {
   display: block;
@@ -247,7 +263,10 @@
 }
 
 /* ── fade in ───────────────────────────────────────── */
-.blog { animation: blog-fade-in 0.6s ease both; }
+/* on a full page load only: page changes inside the site already crossfade,
+   and fading the column from nothing there flashes the moiré behind it
+   (BlogLayout marks swapped-in columns) */
+.blog:not(.swapped-in) { animation: blog-fade-in 0.6s ease both; }
 @keyframes blog-fade-in {
   from { opacity: 0; }
 }

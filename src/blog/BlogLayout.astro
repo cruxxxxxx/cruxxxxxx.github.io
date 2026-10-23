@@ -73,7 +73,9 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
       <button type="button" class="playlist-toggle" aria-expanded="false">
         <span>&#9835; playlist</span><span class="playlist-arrow" aria-hidden="true"></span>
       </button>
-      <div class="playlist-frame" inert></div>`;
+      <div class="playlist-frame" inert>
+        <div class="playlist-frame-clip"><div class="playlist-frame-content"></div></div>
+      </div>`;
     const toggle = element.querySelector<HTMLButtonElement>('.playlist-toggle')!;
     toggle.addEventListener('click', () => toggleExpanded(element, toggle, playlistId));
     stripHeightWatcher.observe(toggle);
@@ -115,12 +117,13 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
     if (frame.querySelector('iframe')) {
       return;
     }
+    const content = frame.querySelector('.playlist-frame-content')!;
     const iframe = document.createElement('iframe');
     iframe.src = embedUrlFor(playlistId);
     iframe.title = 'Spotify playlist';
     iframe.height = '352';
     iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-    frame.append(iframe);
+    content.append(iframe);
   }
 
   // Measurements go on <html>, but each page swap replaces its attributes
@@ -195,6 +198,11 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
       preloadEmbedWhenIdle(player, config.dataset.playlistId!);
     }
   }
+
+  // the column fades in on a full page load only (see blog.css)
+  document.addEventListener('astro:before-swap', (event) => {
+    event.newDocument.querySelector('.blog')?.classList.add('swapped-in');
+  });
 
   // after-swap: leave the blog without a flash of the old player;
   // page-load: the first visit, and every navigation after it
