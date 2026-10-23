@@ -147,19 +147,33 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
     setRootVariable('--playlist-strip-height', `${stripHeight}px`);
   });
 
-  // The strip hangs from the header, whose height changes (it shrinks on
-  // touch screens). The header is a client-only island that persists across
+  // The strip hangs from the header's bottom edge. The header is sticky
+  // only within <body>, so on long posts it scrolls away and the strip goes
+  // with it; it also shrinks on touch screens. It persists across
   // navigations, so it only has to be found once.
-  const headerWatcher = new ResizeObserver(([entry]) => {
-    const headerHeight = entry.target.getBoundingClientRect().height;
-    setRootVariable('--playlist-top', `${headerHeight}px`);
-  });
+  let header: HTMLElement | null = null;
+  let stripTop = '';
+
+  function followHeader() {
+    if (!header) {
+      return;
+    }
+    const headerBottom = `${header.getBoundingClientRect().bottom}px`;
+    if (headerBottom !== stripTop) {
+      stripTop = headerBottom;
+      setRootVariable('--playlist-top', headerBottom);
+    }
+  }
+
+  const headerWatcher = new ResizeObserver(() => followHeader());
+  window.addEventListener('scroll', followHeader, { passive: true });
+  document.addEventListener('astro:page-load', followHeader);
   const headerFinder = new MutationObserver(() => findHeader());
   headerFinder.observe(document.documentElement, { childList: true, subtree: true });
   findHeader();
 
   function findHeader() {
-    const header = document.getElementById('header');
+    header = document.getElementById('header');
     if (!header) {
       return;
     }
