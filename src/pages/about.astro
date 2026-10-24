@@ -64,9 +64,18 @@ import '../blog/blog.css';
 
 <style>
   /* the blog's column, with a portrait on top */
-  .about-portrait {
-    position: relative;
-    margin: 0 0 calc(var(--base) * 2.5);
+  /* the blog's column, split: portrait on the left, text on the right */
+  .about {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: calc(var(--base) * 1.25);
+    align-items: start;
+  }
+  .about-portrait { position: relative; }
+  /* stacked on narrow screens */
+  @media (max-width: 640px) {
+    .about { grid-template-columns: 1fr; }
+    .about-portrait { width: 60%; margin: 0 auto; }
   }
   .about-image {
     display: block;
