@@ -6,18 +6,90 @@ import '../blog/blog.css';
 
 <SiteLayout title={about.title}>
   <main class="blog about">
-    <img class="about-image" src={about.image.src} alt={about.image.alt} />
-    {about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+    {/* the portrait glitches in through a noise mask (see glitchDissolve.ts) */}
+    <div class="about-portrait">
+      {/* width/height reserve the portrait's space, so the text never jumps */}
+      <img
+        class="about-image"
+        src={about.image.src}
+        alt={about.image.alt}
+        width={about.image.width}
+        height={about.image.height}
+        data-dissolve={JSON.stringify(about.dissolve)}
+      />
+    </div>
+    {/* fades in once the portrait has finished appearing */}
+    <div class="about-text">
+      {about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
   </main>
+  <noscript><style>.about-image { visibility: visible; } .about-text { opacity: 1; }</style></noscript>
 </SiteLayout>
+
+<script>
+  import { playDissolve, prefersReducedMotion, type DissolveHandle, type DissolveSettings } from '../components/dissolve/glitchDissolve';
+
+  let current: DissolveHandle | null = null;
+
+  function play(settings?: Partial<DissolveSettings>) {
+    const image = document.querySelector<HTMLImageElement>('.about-image');
+    const text = document.querySelector<HTMLElement>('.about-text');
+    if (!image || !text) {
+      return;
+    }
+    current?.cancel();
+    if (prefersReducedMotion()) {
+      image.classList.add('dissolved');
+      text.classList.add('revealed');
+      return;
+    }
+    image.classList.remove('dissolved');
+    text.classList.remove('revealed');
+    const handle = playDissolve(image, settings ?? JSON.parse(image.dataset.dissolve || '{}'));
+    current = handle;
+    handle.finished.then(() => {
+      // a replay that started meanwhile reveals the text itself
+      if (current === handle) {
+        text.classList.add('revealed');
+      }
+    });
+  }
+
+  document.addEventListener('astro:page-load', () => play());
+  // the dev-only tuner replays it with the settings being tried
+  window.addEventListener('portrait-dissolve:play', (event) => {
+    play((event as CustomEvent<Partial<DissolveSettings>>).detail);
+  });
+</script>
 
 <style>
   /* the blog's column, with a portrait on top */
+  .about-portrait {
+    position: relative;
+    margin: 0 0 calc(var(--base) * 2.5);
+  }
   .about-image {
     display: block;
     width: 100%;
     height: auto;
-    margin: 0 0 calc(var(--base) * 2.5);
+    /* hidden, holding its space, until the dissolve has drawn it in */
+    visibility: hidden;
+  }
+  .about-image.dissolved { visibility: visible; }
+  .about-portrait :global(.dissolve-canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .about-text {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .about-text.revealed { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .about-text { transition: none; }
   }
   .about p { margin: 0 0 1.25em; }
 </style>

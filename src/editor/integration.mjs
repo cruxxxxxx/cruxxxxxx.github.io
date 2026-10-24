@@ -16,6 +16,7 @@ const DATA_FILES = {
   projects: join(ROOT, 'src/data/sitedata.json'),
   experiments: join(ROOT, 'src/data/experiments.json'),
 };
+const ABOUT_FILE = join(ROOT, 'src/data/about.json');
 const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm', '.mio']);
 const MARGIN_FIELDS = [
   'marginTopOpen', 'marginBottomOpen',
@@ -49,6 +50,7 @@ export default function projectEditor() {
       'astro:config:setup': ({ command, injectScript }) => {
         if (command === 'dev') {
           injectScript('page', `import { mountProjectEditor } from '/src/editor/mount.jsx'; mountProjectEditor();`);
+          injectScript('page', `import { mountDissolveTuner } from '/src/components/dissolve/dissolveTuner.ts'; mountDissolveTuner();`);
         }
       },
       'astro:server:setup': ({ server, logger }) => {
@@ -101,7 +103,24 @@ async function route(req, res) {
     const mobile = mediaKind(saved) === 'image' ? await makeMobileVariant(saved) : null;
     return sendJson(res, 200, { src: saved, mobile });
   }
+  if (action === 'POST /__editor/about-dissolve') {
+    const { settings } = JSON.parse(await readBody(req));
+    saveAboutDissolve(settings);
+    return sendJson(res, 200, { ok: true });
+  }
   throw httpError(404, `no editor route ${action}`);
+}
+
+// ── about page ─────────────────────────────────────────────────────────────
+
+/** settings: the portrait's dissolve look, from the tuner on the about page */
+function saveAboutDissolve(settings) {
+  if (!settings || typeof settings !== 'object') {
+    throw httpError(400, 'missing settings');
+  }
+  const about = JSON.parse(readFileSync(ABOUT_FILE, 'utf8'));
+  about.dissolve = settings;
+  writeFileSync(ABOUT_FILE, `${JSON.stringify(about, null, 2)}\n`);
 }
 
 // ── project data ───────────────────────────────────────────────────────────

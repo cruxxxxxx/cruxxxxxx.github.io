@@ -2,7 +2,9 @@
   "title": "about",
   "image": {
     "src": "/me.gif",
-    "alt": "placeholder portrait"
+    "alt": "placeholder portrait",
+    "width": 1000,
+    "height": 1500
   },
   "paragraphs": [
     "Hypnotize Works is a label to share various creative projects.",
@@ -10,5 +12,25 @@
     "Driven by a curiosity to play with light, form, & sound and a commitment to tension.",
     "To create what is 'missing',",
     "And a desire to platform & collaborate with musicians to visualize their worlds."
-  ]
+  ],
+  "dissolve": {
+    "pattern": "scanlines",
+    "cell": 10,
+    "scale": 17,
+    "grain": 0,
+    "softness": 0.34,
+    "flicker": 0.19,
+    "duration": 350,
+    "delay": 100,
+    "glitch": 0.22,
+    "slices": 9,
+    "rgbSplit": 35,
+    "glitchRate": 9,
+    "wave": 107,
+    "waveFrequency": 19.9,
+    "waveSpeed": 1.55,
+    "waveSettle": 0.08,
+    "roll": 5,
+    "seed": 7
+  }
 }
