@@ -220,6 +220,14 @@
   font: inherit;
 }
 #blog-playlist .playlist-toggle:hover { opacity: .7; }
+#blog-playlist .playlist-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+#blog-playlist .playlist-arrow { flex: none; margin-left: 1em; }
 #blog-playlist .playlist-arrow {
   display: inline-block;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);

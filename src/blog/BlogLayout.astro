@@ -2,6 +2,7 @@
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { href } from './lib/url';
 import { SPOTIFY_PLAYLIST_ID } from './site';
+import { playlistTracks } from './lib/playlist';
 import './blog.css';
 
 interface Props {
@@ -13,12 +14,15 @@ interface Props {
 
 const { title = 'blog', description, image, type } = Astro.props;
 const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
+const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) : [];
 ---
 
 <SiteLayout title={title} description={description} image={image} type={type}>
   <main class="blog">
     {/* tells the script below to show the playlist strip on this page */}
-    {SPOTIFY_PLAYLIST_ID && <div class="playlist-config" hidden data-playlist-id={SPOTIFY_PLAYLIST_ID}></div>}
+    {SPOTIFY_PLAYLIST_ID && (
+      <div class="playlist-config" hidden data-playlist-id={SPOTIFY_PLAYLIST_ID} data-tracks={JSON.stringify(tracks)}></div>
+    )}
     {!isBlogHome && <a class="blog-back" href={href('/')}>&larr; blog</a>}
     <slot />
 
@@ -66,12 +70,82 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
 
   let player: HTMLElement | null = null;
 
+  // ── now playing ──
+  // The embed posts its playback state to this page (the same messages
+  // Spotify's iframe API listens for): which track and whether it's paused,
+  // but not the track's name, which comes from the list fetched at build
+  // time (src/blog/lib/playlist.ts).
+  interface PlaylistTrack { uri: string; label: string; duration: number }
+  interface PlaybackUpdate { isPaused: boolean; duration: number; position: number; playingURI?: string }
+
+  const IDLE_LABEL = 'playlist';
+  // the playing length differs from the list's by a few dozen milliseconds
+  const DURATION_TOLERANCE_MS = 500;
+  let tracks: PlaylistTrack[] = [];
+  let lastTrackIndex = -1;
+  let lastPosition = 0;
+
+  // the strip's embed is the only Spotify frame on the page
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://open.spotify.com') {
+      return;
+    }
+    if (event.data?.type === 'playback_update') {
+      showNowPlaying(event.data.payload as PlaybackUpdate);
+    }
+  });
+
+  function showNowPlaying(update: PlaybackUpdate) {
+    const label = player?.querySelector('.playlist-label');
+    if (!label) {
+      return;
+    }
+    const track = update.isPaused ? null : findTrack(update);
+    label.textContent = track ? `\u266B now playing: ${track.label}` : `\u266B ${IDLE_LABEL}`;
+  }
+
+  // Signed out (previews), playingURI is the track's. Signed in, it's the
+  // playlist's, so the track is the one closest in length; tracks of equal
+  // length go by playlist order: the same track while it plays, the next
+  // one once playback jumps back to the start of a song.
+  function findTrack(update: PlaybackUpdate) {
+    const newSongStarted = update.position < lastPosition - 2000;
+    lastPosition = update.position;
+    const byUri = tracks.findIndex((track) => track.uri === update.playingURI);
+    const index = byUri >= 0 ? byUri : closestByDuration(update.duration, newSongStarted);
+    if (index < 0) {
+      return null;
+    }
+    lastTrackIndex = index;
+    return tracks[index];
+  }
+
+  function closestByDuration(duration: number, newSongStarted: boolean) {
+    const from = newSongStarted ? lastTrackIndex + 1 : lastTrackIndex;
+    let best = -1;
+    let bestScore = Infinity;
+    tracks.forEach((track, index) => {
+      const gap = Math.abs(track.duration - duration);
+      if (gap >= DURATION_TOLERANCE_MS) {
+        return;
+      }
+      // the gap decides; on a tie, the nearest index from `from` onwards
+      const stepsAhead = (index - from + tracks.length) % tracks.length;
+      const score = gap * tracks.length + stepsAhead;
+      if (score < bestScore) {
+        best = index;
+        bestScore = score;
+      }
+    });
+    return best;
+  }
+
   function createPlayer(playlistId: string) {
     const element = document.createElement('div');
     element.id = PLAYER_ID;
     element.innerHTML = `
       <button type="button" class="playlist-toggle" aria-expanded="false">
-        <span>&#9835; playlist</span><span class="playlist-arrow" aria-hidden="true"></span>
+        <span class="playlist-label">&#9835; ${IDLE_LABEL}</span><span class="playlist-arrow" aria-hidden="true"></span>
       </button>
       <div class="playlist-frame" inert>
         <div class="playlist-frame-clip"><div class="playlist-frame-content"></div></div>
@@ -206,6 +280,7 @@ const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
       return;
     }
     if (!player) {
+      tracks = JSON.parse(config.dataset.tracks || '[]');
       player = createPlayer(config.dataset.playlistId!);
       document.documentElement.append(player);
       slideIn(player);
