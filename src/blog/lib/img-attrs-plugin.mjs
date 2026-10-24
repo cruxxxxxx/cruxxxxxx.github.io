@@ -13,20 +13,23 @@
  * Sizes follow Obsidian's own syntax, so a note previews the way it renders:
  * `![alt|400](url)` is 400px wide, `![alt|400x300]` is both, and `![alt|60%]`
  * is a share of the column — that last one is ours, Obsidian ignores it.
- * Without a size, media sits at its natural size, capped at the column width.
+ * Without a size, media fills the column.
+ *
+ * Every photo and video also gets width/height from the file itself (a video
+ * from its poster), measured at build time, so the page holds their space
+ * before they load (see media-size.mjs). `data-sized` marks the ones whose
+ * note asked for a size, which the stylesheet leaves at that size.
  */
-import { takeSize, sizeProperties, isVideoUrl, posterUrlFor } from './media.mjs';
+import { takeSize, isVideoUrl, posterUrlFor } from './media.mjs';
+import { mediaProperties } from './media-size.mjs';
 
-function applySize(node, ctx, size) {
-  if (!size) {
-    return;
-  }
-  for (const [key, value] of Object.entries(sizeProperties(size))) {
+async function applySize(node, ctx, src, size) {
+  for (const [key, value] of Object.entries(await mediaProperties(src, size))) {
     ctx.setProperty(node, key, value);
   }
 }
 
-function videoElement(src, size) {
+async function videoElement(src, size) {
   return {
     type: 'element',
     tagName: 'video',
@@ -37,7 +40,7 @@ function videoElement(src, size) {
       playsInline: true,
       // The poster carries the preview; bytes only move once someone hits play.
       preload: 'none',
-      ...sizeProperties(size),
+      ...(await mediaProperties(posterUrlFor(src), size)),
     },
     children: [],
   };
@@ -48,16 +51,16 @@ export default {
   element: [
     {
       filter: ['img'],
-      visit(node, ctx) {
+      async visit(node, ctx) {
         const { label, size } = takeSize(node.properties?.alt);
         if (isVideoUrl(node.properties?.src)) {
-          ctx.replaceNode(node, videoElement(node.properties.src, size));
+          ctx.replaceNode(node, await videoElement(node.properties.src, size));
           return;
         }
         if (size) {
           ctx.setProperty(node, 'alt', label);
-          applySize(node, ctx, size);
         }
+        await applySize(node, ctx, node.properties?.src, size);
         if (!node.properties?.loading) {
           ctx.setProperty(node, 'loading', 'lazy');
         }
@@ -68,10 +71,10 @@ export default {
     },
     {
       filter: ['a'],
-      visit(node, ctx) {
+      async visit(node, ctx) {
         if (isVideoUrl(node.properties?.href)) {
           const { size } = takeSize(ctx.textContent(node));
-          ctx.replaceNode(node, videoElement(node.properties.href, size));
+          ctx.replaceNode(node, await videoElement(node.properties.href, size));
         }
       },
     },

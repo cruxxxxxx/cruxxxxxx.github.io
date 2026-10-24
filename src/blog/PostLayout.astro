@@ -2,7 +2,8 @@
 import BlogLayout from './BlogLayout.astro';
 import { formatMonthYear, formatDayMonthYear, isNote, postLabel, type Post } from './lib/posts';
 import { href } from './lib/url';
-import { isVideoUrl, posterUrlFor, previewImageFor, sizeProperties } from './lib/media.mjs';
+import { isVideoUrl, posterUrlFor, previewImageFor } from './lib/media.mjs';
+import { mediaProperties } from './lib/media-size.mjs';
 
 interface Props {
   post: Post;
@@ -15,7 +16,8 @@ const { title, description, pubDate, updatedDate, tags, cover, coverAlt, coverWi
 
 // A video cover plays in place; og:image and the feed still need a still.
 const coverIsVideo = isVideoUrl(cover);
-const coverSize = sizeProperties(coverWidth);
+// sized from the file (a video's poster) so its space is held before it loads
+const coverSize = cover ? await mediaProperties(coverIsVideo ? posterUrlFor(cover) : cover, coverWidth) : {};
 const note = isNote(post);
 ---
 

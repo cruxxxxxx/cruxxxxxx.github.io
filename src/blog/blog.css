@@ -99,11 +99,21 @@
   height: auto;
   margin: 2em 0;
 }
-.blog .post-body img:not([width]):not([style]),
-.blog .post-body video:not([width]):not([style]) {
+.blog .post-body img:not([data-sized]),
+.blog .post-body video:not([data-sized]) {
   width: 100%;
 }
 .blog .post-body video { background: #000; }
+
+/* photos fade into their reserved space as they arrive (BlogLayout) */
+.blog .post-body img {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.blog .post-body img.arrived { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .blog .post-body img { transition: none; }
+}
 
 .blog .post-body blockquote {
   margin: 1.5em 0;

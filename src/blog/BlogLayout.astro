@@ -31,6 +31,7 @@ const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) :
       <img alt="" />
     </dialog>
   </main>
+  <noscript><style>.blog .post-body img { opacity: 1; }</style></noscript>
 </SiteLayout>
 
 <script>
@@ -55,6 +56,38 @@ const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) :
     enlarged.alt = photo.alt;
     lightbox.showModal();
   });
+</script>
+
+<script>
+  // The text shows straight away: every photo's space is already reserved
+  // (media-size.mjs). Photos then fade into their places as they arrive,
+  // top to bottom: each waits for the one above it, but never longer than
+  // ORDER_WAIT_MS, since the one above may be lazy and off screen.
+  const ORDER_WAIT_MS = 400;
+
+  function photoLoaded(photo: HTMLImageElement) {
+    if (photo.complete) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      photo.addEventListener('load', () => resolve(), { once: true });
+      photo.addEventListener('error', () => resolve(), { once: true });
+    });
+  }
+
+  function atMost(work: Promise<unknown>, milliseconds: number) {
+    return Promise.race([work, new Promise((resolve) => setTimeout(resolve, milliseconds))]);
+  }
+
+  function revealPhotosInOrder() {
+    let photoAbove: Promise<unknown> = Promise.resolve();
+    for (const photo of document.querySelectorAll<HTMLImageElement>('.blog .post-body img')) {
+      const waitForAbove = atMost(photoAbove, ORDER_WAIT_MS);
+      photoAbove = Promise.all([photoLoaded(photo), waitForAbove]).then(() => photo.classList.add('arrived'));
+    }
+  }
+
+  document.addEventListener('astro:page-load', revealPhotosInOrder);
 </script>
 
 <script>
