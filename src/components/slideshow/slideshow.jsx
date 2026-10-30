@@ -75,8 +75,8 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
   };
 
   // A media entry is either a string URL, or { src, poster } to enable a
-  // video slide to "lead" on the closed grid. The poster shows while closed;
-  // the real player takes over when the project opens.
+  // video or .mio slide to "lead" on the closed grid. The poster shows while
+  // closed; the real player takes over when the project opens.
   const getEntrySrc = (entry) => (typeof entry === 'string' ? entry : entry.src);
   const getEntryPoster = (entry) => (typeof entry === 'string' ? null : entry.poster);
   // optional start time (seconds): the poster is the frame at this time and the
@@ -192,6 +192,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
           const posterTime = getEntryPosterTime(entry);
           const mediaType = getMediaType(src);
           const isVideoLike = mediaType === 'video' || mediaType === 'youtube';
+          const isPlayable = isVideoLike || mediaType === 'mio';
           return (
             <div key={index}>
               {mediaType === 'image' ? (
@@ -246,13 +247,26 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
                     />
                   )}
                 </div>
-              ) : isVideoLike && poster ? (
+              ) : mediaType === 'mio' && isProjectOpen && index === slideIndex ? (
+                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <MioPlayerWrapper
+                    src={src}
+                    onLoaded={() => {
+                      handleLoad(index);
+                      setVideoStarted(prev => ({ ...prev, [index]: true }));
+                    }}
+                  />
+                  {/* keep the poster up until the game has loaded, like a video */}
+                  {poster && !videoStarted[index] && (
+                    <ResponsiveImage
+                      src={poster}
+                      alt={projectName}
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 2, pointerEvents: 'none' }}
+                    />
+                  )}
+                </div>
+              ) : isPlayable && poster ? (
                 renderPoster(poster, index)
-              ): mediaType === 'mio' && isProjectOpen && index === slideIndex ? (
-                <MioPlayerWrapper
-                  src={src}
-                  onLoaded={() => handleLoad(index)}
-                />
             ) : null}
             </div>
           );

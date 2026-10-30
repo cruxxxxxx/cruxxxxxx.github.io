@@ -4,12 +4,20 @@
 			"name": "WarioWare DIY Mini-Game",
 			"marginTopOpen": "2%",
 			"marginBottomOpen": "2%",
-			"marginTopClose": "-17%",
-			"marginBottomClose": "-30%",
-			"marginTopHover": "-12%",
-			"marginBottomHover": "-25%",
+			"marginTopClose": "-6%",
+			"marginBottomClose": "-40%",
+			"marginTopHover": "0%",
+			"marginBottomHover": "-32%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": ["warioware4.png", "warioware/ww_tattoo.mio", "warioware2.png", "warioware3.png"],
+			"mediaSrcs": [
+				{
+					"src": "warioware/ww_tattoo.mio",
+					"poster": "warioware.png"
+				},
+				"warioware4.png",
+				"warioware2.png",
+				"warioware3.png"
+			],
 			"category": "game",
 			"group": "experiments",
 			"year": "2025",
@@ -40,7 +48,10 @@
 			"category": "vfx",
 			"group": "experiments",
 			"year": "2024",
-			"description": "Copies camera output to a glass surface, then shatters it & explodes, revealing the underlying scene. Similar to vfx in Super Smash Bros & Persona 5."
+			"description": [
+				"Copies camera buffer to a cell fractured mesh UV mapped as one surface. Then, applies an impulse to simulate an explosion, so it looks like shattering glass,  revealing the underlying scene.",
+				"\n\nInspired by VFX in Super Smash Bros & Persona 5."
+			]
 		},
 		{
 			"name": "Stencil Buffer Point Lights",
@@ -51,14 +62,21 @@
 			"marginTopHover": "-33%",
 			"marginBottomHover": "-1%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": ["streetlights.png", "https://d1yrgsd0mpwmck.cloudfront.net/street_lamps2.mp4"],
+			"mediaSrcs": [
+				{
+					"src": "https://d1yrgsd0mpwmck.cloudfront.net/street_lamps2.mp4",
+					"poster": "streetlights.png"
+				}
+			],
 			"category": "shader",
 			"group": "experiments",
 			"year": "2024",
-			"description": "By writing a sphere volume where it intersects with geometry to the stencil buffer, we can use that as a mask to brighten pixels, creating a simple illusion of point lights in the style of Zelda: The Wind Waker.\n\n"
+			"description": [
+				"By writing a sphere volume where it intersects with geometry to the stencil buffer, we can use that as a mask to brighten pixels, creating a simple illusion of point lights in the style of Zelda: The Wind Waker.\n"
+			]
 		},
 		{
-			"name": "Artistic MipMap",
+			"name": "MipMaps for Style",
 			"marginTopOpen": "2%",
 			"marginBottomOpen": "2%",
 			"marginTopClose": "-10%",
@@ -66,7 +84,12 @@
 			"marginTopHover": "-8%",
 			"marginBottomHover": "-27%",
 			"marginCloseDiff": "-30",
-			"mediaSrcs": ["mipmap.png", "https://d1yrgsd0mpwmck.cloudfront.net/mipmap.mp4"],
+			"mediaSrcs": [
+				{
+					"src": "https://d1yrgsd0mpwmck.cloudfront.net/mipmap.mp4",
+					"poster": "mipmap.png"
+				}
+			],
 			"category": "vfx",
 			"group": "experiments",
 			"year": "2024",
@@ -142,8 +165,10 @@
 			"marginBottomHover": "-23%",
 			"marginCloseDiff": "-30",
 			"mediaSrcs": [
-				"vector.png",
-				"https://d1yrgsd0mpwmck.cloudfront.net/vector_lookat.mp4",
+				{
+					"src": "https://d1yrgsd0mpwmck.cloudfront.net/vector_lookat.mp4",
+					"poster": "vector.png"
+				},
 				"https://d1yrgsd0mpwmck.cloudfront.net/vector_radial.mp4"
 			],
 			"category": "math",
@@ -170,6 +195,55 @@
 			"group": "experiments",
 			"year": "2023",
 			"description": "Finds the luminosity of a fragment and samples a 1D color texture to recolor it, very useful for things like player icons, player skins, color palettes, etc."
+		},
+		{
+			"name": "gdx-3ds",
+			"marginTopOpen": "2%",
+			"marginBottomOpen": "2%",
+			"marginTopClose": "-18%",
+			"marginBottomClose": "-29%",
+			"marginTopHover": "-16%",
+			"marginBottomHover": "-24%",
+			"marginCloseDiff": "-30",
+			"mediaSrcs": ["v1_race.jpg", "gameplay2_2.mp4"],
+			"category": "port",
+			"group": "experiments",
+			"year": "2026",
+			"description": [
+				"A port of F-Zero X to the Nintendo 3DS at 60fps in stereoscopic 3D with local & online multiplayer. ",
+				"\n\nI used Claude Code to do deep research on the state of N64 -> 3DS ports, N64 architecture, and 3DS homebrew development. Once a plan was created, we got to work. ",
+				"\n\nOver 3 months of free time, an orchestrator agent ran many sub-agents in parallel to solve issues like memory address translation & converting N64 display lists into native 3DS GPU commands. ",
+				"\n\nEventually, I removed myself from the loop by using a 3DS connected to Wi-Fi, which the agent would push builds to for testing, autonomously. ",
+				"\n\nI spent $600 on 3 months of Claude Max (~$20k at API rate cost). ",
+				"\n\nI'd estimate the same work would take 4 Sr. Engineers over 1 year (~$500k in salary). ",
+				"\n\n(F-Zero X is © Nintendo. The code is open source, no assets included. This was an education project on low level development, optimization, and autonomous agentic development).",
+				"\n\n[A full technical breakdown here, and some more personal thoughts on the future of software development](https://hypnotize.works/gdx-3ds/postmortem/cost.html)",
+				"\n\nTools: Claude, devkitPro, G-Diffuser"
+			],
+			"yearOrder": 2
+		},
+		{
+			"name": "Overlap",
+			"marginTopOpen": "2%",
+			"marginBottomOpen": "2%",
+			"marginTopClose": "-14%",
+			"marginBottomClose": "-22%",
+			"marginTopHover": "-9%",
+			"marginBottomHover": "-13%",
+			"marginCloseDiff": "-30",
+			"mediaSrcs": ["overlap6.png", "overlap.gif"],
+			"category": "app",
+			"group": "experiments",
+			"year": "2026",
+			"description": [
+				"When trying to keep your data organized, directories that bucket on concepts start to fail. ",
+				"\n\nOverlap is a Mac OS app that uses Finder tags to solve this problem. Easily assign files multiple tags and explore your data using an intuitive Venn Diagram query tool.",
+				"\n\nBuilt in plugins use Apple's local ML models for image classification (offering suggested tags and ones in your taxonomy), duplicate identification, and multi-modal semantic search. ",
+				"\n\nThere's also advanced moodboard support and integration with Are.na",
+				"\n\n[github](https://github.com/cruxxxxxx/Overlap)",
+				"\n\ntools: Claude, Swift, CLIP"
+			],
+			"yearOrder": 3
 		}
 	]
 }

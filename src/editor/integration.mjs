@@ -8,7 +8,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatProjectJson } from './format-json.mjs';
-import { makeMobileVariant, mediaKind, missingVariants, readVariantManifest } from './media-variants.mjs';
+import { MANIFEST_PATH, makeMobileVariant, mediaKind, missingVariants, readVariantManifest } from './media-variants.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PUBLIC_DIR = join(ROOT, 'public');
@@ -24,6 +24,9 @@ const MARGIN_FIELDS = [
   'marginTopHover', 'marginBottomHover',
   'marginCloseDiff',
 ];
+
+// the running dev server, so every write here can tell Vite about it
+let viteServer = null;
 
 /**
  * Build guard: every phone copy listed in media-variants.json must exist in
@@ -54,6 +57,7 @@ export default function projectEditor() {
         }
       },
       'astro:server:setup': ({ server, logger }) => {
+        viteServer = server;
         server.middlewares.use(async (req, res, next) => {
           if (!req.url.startsWith('/__editor/')) {
             return next();
@@ -98,9 +102,14 @@ async function route(req, res) {
   }
   if (action === 'POST /__editor/upload') {
     const saved = saveUpload(url.searchParams.get('filename'), await readBody(req, { raw: true }));
+    announcePublicFile(saved);
     // phone copies for images right away; video copies wait until their
     // hosting is decided (public/mobile/*.mp4 is gitignored for now)
     const mobile = mediaKind(saved) === 'image' ? await makeMobileVariant(saved) : null;
+    if (mobile) {
+      announcePublicFile(mobile);
+      announceDataChange(MANIFEST_PATH);
+    }
     return sendJson(res, 200, { src: saved, mobile });
   }
   if (action === 'POST /__editor/about-dissolve') {
@@ -121,6 +130,7 @@ function saveAboutDissolve(settings) {
   const about = JSON.parse(readFileSync(ABOUT_FILE, 'utf8'));
   about.dissolve = settings;
   writeFileSync(ABOUT_FILE, `${JSON.stringify(about, null, 2)}\n`);
+  announceDataChange(ABOUT_FILE);
 }
 
 // ── project data ───────────────────────────────────────────────────────────
@@ -133,6 +143,7 @@ function readAllGroups() {
 
 function writeGroup(group, projects) {
   writeFileSync(DATA_FILES[group], formatProjectJson({ projects }));
+  announceDataChange(DATA_FILES[group]);
 }
 
 function saveProject(originalName, project) {
@@ -273,6 +284,26 @@ function saveUpload(requestedName, bytes) {
   }
   writeFileSync(join(PUBLIC_DIR, name), bytes);
   return name;
+}
+
+// ── telling vite ───────────────────────────────────────────────────────────
+//
+// Vite learns about file changes from its watcher, and on this machine that
+// report can lag far behind the write. Until it lands, a new public/ file 404s
+// and the page keeps getting the old JSON (hard refresh included), while the
+// editor, which reads the files itself, already shows the new values. So every
+// write here tells Vite directly.
+
+/** Makes a new public/ file servable right away. */
+function announcePublicFile(name) {
+  viteServer?.watcher.emit('add', join(viteServer.config.publicDir, name.replace(/^\//, '')));
+}
+
+/** Drops Vite's cached copy of a JSON file, so the next page load reads the new one. */
+function announceDataChange(path) {
+  for (const environment of Object.values(viteServer?.environments ?? {})) {
+    environment.moduleGraph.onFileChange(path);
+  }
 }
 
 // ── http helpers ───────────────────────────────────────────────────────────

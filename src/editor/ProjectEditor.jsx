@@ -201,14 +201,7 @@ function DraftForm({ draft, preview }) {
         </label>
       </div>
 
-      <label className="pe-field">
-        <span>description <em>(blank line = new paragraph)</em></span>
-        <textarea
-          rows={8}
-          value={descriptionText(project.description)}
-          onChange={(e) => update({ description: toParagraphs(e.target.value) })}
-        />
-      </label>
+      <DescriptionField description={project.description} update={update} />
 
       <MediaList project={project} update={update} />
 
@@ -326,6 +319,42 @@ function MarginSlider({ label, value, onChange }) {
   );
 }
 
+// Links are written [label](https://…); "+ link" inserts one at the cursor,
+// using the selected text as the label, then selects the URL to paste over.
+function DescriptionField({ description, update }) {
+  const textarea = useRef();
+  const text = descriptionText(description);
+
+  const insertLink = () => {
+    const field = textarea.current;
+    const { selectionStart: start, selectionEnd: end } = field;
+    const label = text.slice(start, end) || 'link text';
+    const url = 'https://';
+    const link = `[${label}](${url})`;
+    update({ description: toParagraphs(text.slice(0, start) + link + text.slice(end)) });
+    const urlStart = start + label.length + 3;
+    requestAnimationFrame(() => {
+      field.focus();
+      field.setSelectionRange(urlStart, urlStart + url.length);
+    });
+  };
+
+  return (
+    <label className="pe-field">
+      <span className="pe-field-head">
+        <span>description <em>(blank line = new paragraph; [text](https://…) = link)</em></span>
+        <button type="button" onClick={insertLink}>+ link</button>
+      </span>
+      <textarea
+        ref={textarea}
+        rows={8}
+        value={text}
+        onChange={(e) => update({ description: toParagraphs(e.target.value) })}
+      />
+    </label>
+  );
+}
+
 function MediaList({ project, update }) {
   const [uploading, setUploading] = useState('');
   const fileInput = useRef();
@@ -387,7 +416,7 @@ function MediaList({ project, update }) {
             <input
               className="pe-poster"
               value={entryPoster(entry)}
-              placeholder="poster (videos)"
+              placeholder="poster (video / .mio)"
               onChange={(e) => changeEntry(index, { poster: e.target.value })}
             />
             <span className="pe-media-buttons">

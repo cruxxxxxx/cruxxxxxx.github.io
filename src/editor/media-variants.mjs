@@ -19,7 +19,7 @@ import sharp from 'sharp';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PUBLIC_DIR = join(ROOT, 'public');
 const VARIANT_DIR = join(PUBLIC_DIR, 'mobile');
-const MANIFEST_PATH = join(ROOT, 'src/data/media-variants.json');
+export const MANIFEST_PATH = join(ROOT, 'src/data/media-variants.json');
 
 const MOBILE_IMAGE_WIDTH = 900;
 const MOBILE_IMAGE_QUALITY = 78;

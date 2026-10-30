@@ -1,8 +1,49 @@
 diff --git a/node_modules/mio-player/src/player.js b/node_modules/mio-player/src/player.js
-index 46e7399..70d0c8e 100644
+index 46e7399..7ab616e 100644
 --- a/node_modules/mio-player/src/player.js
 +++ b/node_modules/mio-player/src/player.js
-@@ -274,7 +274,7 @@ class Player extends EventEmitter {
+@@ -139,7 +139,7 @@ class Player extends EventEmitter {
+ 
+ 			this.emit('playing');
+ 
+-			this.runFrame(
++			this.runFrameSafely(
+ 				{ id: this.gameId, length, objects, winConditions, layers, collisionData, command },
+ 				{ properties, winStatus: Mio.GameCondition.NotYetWon, frame: 0, time: 0, lastTimestamp: null, isFrozen: false, collisionPixels: [] },
+ 				{ imageData, backgroundImage, sounds: this._sounds, winSounds: this._winSounds, loseSounds: this._loseSounds }
+@@ -216,10 +216,21 @@ class Player extends EventEmitter {
+ 				//console.debug(state.frame, state.time);
+ 				state.lastTimestamp = time;
+ 			}
+-			this.runFrame(gameData, state, assets);
++			this.runFrameSafely(gameData, state, assets);
+ 		})
+ 	}
+ 
++	// a frame that throws ends the loop; stop the music with it so the game
++	// never keeps playing sound over a canvas that stopped drawing
++	runFrameSafely(gameData, state, assets) {
++		try {
++			this.runFrame(gameData, state, assets);
++		} catch (error) {
++			this._musicPlayer.stopMusic();
++			throw error;
++		}
++	}
++
+ 	drawGame(state, gameData, assets) {
+ 		if (state.isFrozen) {
+ 			this.context.filter = 'invert(1)';
+@@ -258,7 +269,7 @@ class Player extends EventEmitter {
+ 		for (let layer = 0; layer < layerCount; layer++) {
+ 			let i = gameData.layers[layer];
+ 			let props = state.properties[i];
+-			if (props !== null) {
++			if (props != null) {
+ 				let size = props.size;
+ 				let halfSize = size / 2;
+ 				let bank = props.art.bankIndex;
+@@ -274,7 +285,7 @@ class Player extends EventEmitter {
  			let animation = (state.confetti[i].animationIndex + Math.floor(state.frame / 8)) % 4;
  			let bitmapX = animation * 15;
  			let args = [this._confettiBitmap, bitmapX, 0, 15, 15, state.confetti[i].position.x, state.confetti[i].position.y, 15, 15];
@@ -11,7 +52,7 @@ index 46e7399..70d0c8e 100644
  
  			if (!this.isPaused) {
  				state.confetti[i].position.x += state.confetti[i].velocity.x;
-@@ -293,10 +293,10 @@ class Player extends EventEmitter {
+@@ -293,10 +304,10 @@ class Player extends EventEmitter {
  		if (state.flash !== undefined && state.flash > 0) {
  			let alpha = state.flash / 10;
  			alpha = 0.6 - Math.abs(alpha - 0.5);

@@ -48,3 +48,9 @@ fails if `media-variants.json` lists a copy that isn't in `public/`.
 Pushing `master` builds and deploys with GitHub Actions
 (`.github/workflows/deploy.yml`); a push to the blog repo triggers a rebuild.
 See `cutover/README.md` for the switch-over from the old setup.
+
+## Shortcuts
+
+`bin/site` wraps all of the above: `site dev`, `site preview`,
+`site ship "msg"` (build, commit, push, watch the deploy), `site redeploy`,
+`site status`. Run `site help` for the full list.

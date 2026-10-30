@@ -19,6 +19,10 @@ export default defineConfig({
   // No `image.remotePatterns` on purpose: blog photos are already web-sized
   // on R2, and allowlisting the host would make every build download them.
   vite: {
+    // A build sharing the dev server's dependency cache rewrites it under the
+    // running server, whose page then asks for chunks that are gone (e.g. the
+    // video player fails to load). Builds get a cache of their own.
+    cacheDir: process.argv.includes('build') ? 'node_modules/.vite-build' : 'node_modules/.vite',
     resolve: {
       // CRA aliased this implicitly; the project cards, footer caret and close
       // mark use react-native's Pressable for unified hover/press/touch.

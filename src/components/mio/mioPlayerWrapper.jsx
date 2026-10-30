@@ -1,6 +1,40 @@
 import React, { useEffect, useRef } from 'react';
 import { Player, ORIGINAL_CANVAS_WIDTH, ORIGINAL_CANVAS_HEIGHT } from 'mio-player';
 
+// Game files are fetched once per page and shared, so reopening the card
+// reuses the bytes. Firefox sometimes returns an empty body when the same file
+// is requested again quickly; that loads as a blank game (music over a white
+// canvas), so anything that isn't a whole .mio file is fetched again.
+const MIO_FILE_SIZE = 65536;
+const gameFiles = new Map();
+
+function loadGameFile(src) {
+  if (!gameFiles.has(src)) {
+    const request = fetchGameFile(src).catch((error) => {
+      gameFiles.delete(src);
+      throw error;
+    });
+    gameFiles.set(src, request);
+  }
+  return gameFiles.get(src);
+}
+
+async function fetchGameFile(src) {
+  // absolute, so the file resolves the same from any page URL
+  const url = new URL(src, `${window.location.origin}/`);
+  for (const cache of ['default', 'reload']) {
+    const response = await fetch(url, { cache });
+    if (!response.ok) {
+      throw new Error(`${response.status} for ${src}`);
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length === MIO_FILE_SIZE) {
+      return bytes;
+    }
+  }
+  throw new Error(`${src} isn't a complete .mio file`);
+}
+
 const MioPlayerWrapper = ({ src, onLoaded }) => {
   const canvasRef = useRef(null);
   const mioPlayerRef = useRef(null);
@@ -117,12 +151,11 @@ const MioPlayerWrapper = ({ src, onLoaded }) => {
     // stops and piles up on every carousel navigation.
     let cancelled = false;
 
-    fetch(src)
-      .then(res => res.arrayBuffer())
-      .then(buffer => {
+    loadGameFile(src)
+      .then(bytes => {
         if (cancelled) return;
-        const mioData = new Uint8Array(buffer);
-        mioPlayer.loadAndStart(mioData);
+        // a copy per play, so one game can't change the bytes the next one reads
+        mioPlayer.loadAndStart(new Uint8Array(bytes));
         if (onLoaded) onLoaded();
       })
       .catch(err => {

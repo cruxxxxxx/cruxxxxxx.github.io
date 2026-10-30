@@ -1,0 +1,285 @@
+#!/usr/bin/env bash
+# site: one entry point for running and deploying hypnotize.works.
+#
+#   site dev              link the blog posts, start the dev server, open the browser
+#   site stop             stop the dev server
+#   site build            production build into dist/
+#   site preview          production build, then serve it locally
+#   site ship ["msg"]     build, commit (only when a message is given), push master, watch the deploy
+#   site redeploy         rebuild + deploy the current master without a commit (e.g. after a blog push)
+#   site watch            follow the latest deploy until it finishes
+#   site status           recent deploys + whether hypnotize.works answers
+#   site media [--videos] phone copies of project media
+#   site open [actions]   open the live site (or the Actions page)
+#
+# The site URL lives in astro.config.mjs (`site:`); nothing needs exporting.
+# Deploys run on GitHub Actions (.github/workflows/deploy.yml) on every push to master.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.." && pwd)"
+REPO="cruxxxxxx/cruxxxxxx.github.io"
+GH_USER="cruxxxxxx"
+BRANCH="master"
+SITE_URL="https://hypnotize.works"
+DEV_URL="http://localhost:4321"
+BLOG_VAULT="${BLOG_VAULT:-$HOME/obs/obs}"
+WORKFLOW="deploy.yml"
+
+if [ -t 1 ]; then
+    BOLD=$'\e[1m' DIM=$'\e[2m' RED=$'\e[31m' GREEN=$'\e[32m' YELLOW=$'\e[33m' CYAN=$'\e[36m' RESET=$'\e[0m'
+else
+    BOLD="" DIM="" RED="" GREEN="" YELLOW="" CYAN="" RESET=""
+fi
+
+say() {
+    echo "${CYAN}▸${RESET} $*"
+}
+
+ok() {
+    echo "${GREEN}✓${RESET} $*"
+}
+
+die() {
+    echo "${RED}site:${RESET} $*" >&2
+    exit 1
+}
+
+need() {
+    command -v "$1" >/dev/null 2>&1 || die "$1 not found${2:+ ($2)}"
+}
+
+confirm() {
+    local answer
+    read -r -p "$1 [y/N] " answer
+    case "$answer" in
+        y|Y|yes|YES) return 0 ;;
+        *) echo "cancelled"; exit 1 ;;
+    esac
+}
+
+# gh as the account that owns the repo, whichever account is active
+gh_site() {
+    need gh "brew install gh"
+    GH_TOKEN="$(gh auth token --user "$GH_USER" 2>/dev/null)" || die "gh has no login for $GH_USER (gh auth login)"
+    GH_TOKEN="$GH_TOKEN" gh "$@" --repo "$REPO"
+}
+
+in_root() {
+    cd "$ROOT"
+}
+
+ensure_deps() {
+    if [ ! -d "$ROOT/node_modules" ]; then
+        say "installing dependencies"
+        npm install
+    fi
+}
+
+ensure_blog_content() {
+    if [ -e "$ROOT/.blog-content" ]; then
+        return
+    fi
+    [ -d "$BLOG_VAULT" ] || die "blog vault not found at $BLOG_VAULT (set BLOG_VAULT)"
+    ln -sfn "$BLOG_VAULT" "$ROOT/.blog-content"
+    ok "linked .blog-content → $BLOG_VAULT"
+}
+
+build() {
+    in_root
+    ensure_deps
+    ensure_blog_content
+    say "building"
+    npm run build
+}
+
+latest_run_id() {
+    local commit="${1:-}"
+    local args=(run list --workflow "$WORKFLOW" --limit 1 --json databaseId --jq '.[0].databaseId')
+    if [ -n "$commit" ]; then
+        args+=(--commit "$commit")
+    fi
+    gh_site "${args[@]}"
+}
+
+# wait for the run a push or dispatch just queued to show up
+wait_for_run() {
+    local commit="${1:-}" previous="${2:-}" id=""
+    for _ in $(seq 1 30); do
+        id="$(latest_run_id "$commit")"
+        if [ -n "$id" ] && [ "$id" != "$previous" ]; then
+            echo "$id"
+            return
+        fi
+        sleep 2
+    done
+    die "no deploy run showed up; check: site open actions"
+}
+
+watch_run() {
+    local id="$1"
+    say "watching deploy run $id"
+    if gh_site run watch "$id" --exit-status --interval 5; then
+        ok "deployed → $SITE_URL"
+    else
+        die "deploy failed: gh run view $id --repo $REPO --log-failed"
+    fi
+}
+
+check_live() {
+    local code
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$SITE_URL/" || true)"
+    if [ "$code" = "200" ]; then
+        ok "$SITE_URL answers 200"
+    else
+        echo "${YELLOW}!${RESET} $SITE_URL answered ${code:-nothing}"
+    fi
+}
+
+cmd_dev() {
+    in_root
+    ensure_deps
+    ensure_blog_content
+    npx astro dev
+    open "$DEV_URL"
+    ok "dev server on $DEV_URL (site stop to stop it)"
+}
+
+cmd_stop() {
+    in_root
+    npx astro dev stop
+}
+
+cmd_build() {
+    build
+    ok "built into dist/"
+}
+
+cmd_preview() {
+    build
+    say "serving the build on $DEV_URL"
+    npm run preview
+}
+
+cmd_ship() {
+    local message="${1:-}"
+    in_root
+    local current
+    current="$(git branch --show-current)"
+    [ "$current" = "$BRANCH" ] || die "on '$current'; ship pushes $BRANCH (git switch $BRANCH)"
+
+    if [ -n "$message" ]; then
+        if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            confirm "commit all of this as \"$message\"?"
+            git add -A
+            git commit -m "$message"
+        else
+            say "nothing to commit"
+        fi
+    elif [ -n "$(git status --porcelain)" ]; then
+        echo "${DIM}uncommitted changes stay local (pass a message to commit them):${RESET}"
+        git status --short
+    fi
+
+    git fetch -q origin "$BRANCH"
+    if [ -z "$(git rev-list "origin/$BRANCH..$BRANCH")" ]; then
+        die "nothing to push; use site redeploy to rebuild as is"
+    fi
+    git log --oneline "origin/$BRANCH..$BRANCH"
+
+    build
+    local previous
+    previous="$(latest_run_id)"
+    say "pushing $BRANCH"
+    git push origin "$BRANCH"
+    watch_run "$(wait_for_run "$(git rev-parse HEAD)" "$previous")"
+    check_live
+}
+
+cmd_redeploy() {
+    local previous
+    previous="$(latest_run_id)"
+    say "starting $WORKFLOW on $BRANCH"
+    gh_site workflow run "$WORKFLOW" --ref "$BRANCH"
+    watch_run "$(wait_for_run "" "$previous")"
+    check_live
+}
+
+cmd_watch() {
+    local id
+    id="$(latest_run_id)"
+    [ -n "$id" ] || die "no deploy runs yet"
+    watch_run "$id"
+}
+
+cmd_status() {
+    echo "${BOLD}recent deploys${RESET}"
+    gh_site run list --workflow "$WORKFLOW" --limit 5
+    echo
+    check_live
+    in_root
+    local ahead
+    ahead="$(git rev-list --count "origin/$BRANCH..$BRANCH" 2>/dev/null || echo 0)"
+    if [ "$ahead" != "0" ]; then
+        echo "${YELLOW}!${RESET} $ahead local commit(s) on $BRANCH not pushed"
+    fi
+}
+
+cmd_media() {
+    in_root
+    ensure_deps
+    npm run media:mobile -- "$@"
+}
+
+cmd_open() {
+    case "${1:-}" in
+        actions) open "https://github.com/$REPO/actions" ;;
+        "") open "$SITE_URL" ;;
+        *) die "open what? (nothing for the site, or 'actions')" ;;
+    esac
+}
+
+cmd_help() {
+    cat <<EOF
+${BOLD}site${RESET}: run and deploy hypnotize.works
+
+${BOLD}local${RESET}
+  ${CYAN}dev${RESET}                 link the blog posts, start the dev server, open the browser
+  ${CYAN}stop${RESET}                stop the dev server
+  ${CYAN}build${RESET}               production build into dist/
+  ${CYAN}preview${RESET}             production build, then serve it on $DEV_URL
+  ${CYAN}media${RESET} [--videos]    phone copies of project media (videos are slow)
+
+${BOLD}deploy${RESET}
+  ${CYAN}ship${RESET} ["msg"]        build, push $BRANCH, watch the deploy until it's live
+                      with a message, commits everything first (asks before)
+  ${CYAN}redeploy${RESET}            rebuild + deploy $BRANCH as is (no commit)
+  ${CYAN}watch${RESET}               follow the latest deploy
+  ${CYAN}status${RESET}              recent deploys, unpushed commits, is the site up
+  ${CYAN}open${RESET} [actions]      open $SITE_URL (or the Actions page)
+
+${DIM}blog posts: push to cruxxxxxx/blog and the site rebuilds itself.
+blog vault: \$BLOG_VAULT (default ~/obs/obs)${RESET}
+EOF
+}
+
+main() {
+    local command="${1:-help}"
+    shift || true
+    case "$command" in
+        dev) cmd_dev "$@" ;;
+        stop) cmd_stop "$@" ;;
+        build) cmd_build "$@" ;;
+        preview) cmd_preview "$@" ;;
+        ship|deploy) cmd_ship "$@" ;;
+        redeploy) cmd_redeploy "$@" ;;
+        watch) cmd_watch "$@" ;;
+        status) cmd_status "$@" ;;
+        media) cmd_media "$@" ;;
+        open) cmd_open "$@" ;;
+        help|-h|--help) cmd_help ;;
+        *) echo "${RED}unknown command: $command${RESET}" >&2; echo; cmd_help; exit 1 ;;
+    esac
+}
+
+main "$@"

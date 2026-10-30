@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ProjectStates, ProjectStateHandler } from './projectStatesHandler.js';
 import Slideshow from '../slideshow/slideshow.jsx';
 import { OpenMark } from '../openmark/openmark.jsx';
+import { DescriptionText } from './descriptionText.jsx';
 
 const MARGIN_FIELDS = [
   'marginTopOpen', 'marginBottomOpen',
@@ -183,7 +184,7 @@ function ProjectComponent(props) {
         />
       </div>
       <div ref={projectDescriptionRef} className="project-description">
-        {project.description}
+        <DescriptionText description={project.description} />
       </div>
 
     </div>

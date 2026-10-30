@@ -16,7 +16,8 @@
 			"description": [
 				"Music Puzzle Action game with a unique twist: you tap on the beat to make color matches.",
 				"\n\nTools: Unity, C#, GLSL, Koreographer, SuperTextMesh, DOTween, Ableton, Photoshop, After Effects"
-			]
+			],
+			"yearOrder": 1
 		},
 		{
 			"name": "\"The Write to Bear Claws\"\nPublic Phone School",
@@ -117,7 +118,7 @@
 			"year": "2020",
 			"description": [
 				"Live visuals for Skylar Spence at Elsewhere in Brooklyn, NY. Performed in real-time using a custom Unity VJ tool with shaders for effects & transitions.",
-				"\n\nTools: Unity"
+				"\n\nTools: Unity, various [Keijiro Takahashi](https://github.com/keijiro) libraries"
 			]
 		}
 	]
