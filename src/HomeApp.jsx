@@ -84,7 +84,7 @@ const setProjectHash = (project) => {
 
 function App() {
   const { projectStates, setProjectStates, setActiveIndex, resetActiveIndex, isActive, isNotActive } = useProjectState(projectData);
-  const { loaded, setLoaded, progress, setProgress, startAnimation, setStartAnimation } = useLoadingState(projectData);
+  const { loaded, setLoaded, progress, setProgress, startAnimation, setStartAnimation } = useLoadingState();
   // a footer click on another page may already have picked a group
   const [filteredProjects, setFilteredProjects] = useState(() => filterProjectData($activeGroups.get()));
   const editorDraft = useStore($editorDraft);
@@ -182,21 +182,17 @@ function App() {
     scrollToTop();
   };
 
-  const onMediaLoaded = useCallback((index) => {
-    setLoaded(prevLoaded => {
-      const newLoaded = [...prevLoaded];
-      newLoaded[index] = true;
-      return newLoaded;
-    });
+  const onMediaLoaded = useCallback((projectName) => {
+    setLoaded(prevLoaded => (prevLoaded[projectName] ? prevLoaded : { ...prevLoaded, [projectName]: true }));
   }, [setLoaded]);
 
   useEffect(() => {
     if (firstLoadComplete) {
       return; // gate only the first paint; later filter changes use the wipe
     }
-    const percentage = calculatePercentageLoaded(loaded);
+    const percentage = calculatePercentageLoaded(displayedProjects.map((project) => loaded[project.name]));
     setProgress(percentage);
-  }, [loaded, setProgress, firstLoadComplete]);
+  }, [loaded, displayedProjects, setProgress, firstLoadComplete]);
 
   const openProject = (index) => {
     const opening = !isActive(index);
@@ -303,7 +299,7 @@ function App() {
                   state={projectStates[index] ?? ProjectStates.CLOSED} 
                   editing={index === editedIndex}
                   onClose={() => !isEditing && closeProject(index)}
-                  onMediaLoaded={() => onMediaLoaded(index)}
+                  onMediaLoaded={() => onMediaLoaded(project.name)}
                   startAnimationTime={getAnimationStartTime(startAnimation, index)}/>
               </Pressable>
             ))}

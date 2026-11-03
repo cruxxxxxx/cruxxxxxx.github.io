@@ -8,6 +8,9 @@ export const getAnimationStartTime = (startAnimationBool, index) => {
 export function calculatePercentageLoaded (loaded) {
 	const loadedItems = loaded.filter(item => item).length;
     const totalItems = loaded.length;
+    if (totalItems === 0) {
+        return 100;
+    }
     const percentageLoaded = (loadedItems / totalItems) * 100;
 
     return percentageLoaded;

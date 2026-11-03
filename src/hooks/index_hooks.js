@@ -22,8 +22,10 @@ export function useProjectState(projectData) {
   };
 }
 
-export function useLoadingState(projectData) {
-    const [loaded, setLoaded] = useState(new Array(projectData.length).fill(false));
+// loaded is keyed by project name: the gate counts only the projects on
+// screen, which can be one group when arriving from another page.
+export function useLoadingState() {
+    const [loaded, setLoaded] = useState({});
     const [progress,setProgress] = useState(0);
     const [startAnimation, setStartAnimation] = useState(null);
 
