@@ -15,8 +15,8 @@ import LoadingBar from 'react-top-loading-bar'
 import { useStore } from '@nanostores/react';
 import { $activeGroups, $filtering, $groupRequest } from './stores/site.js';
 import { scrollToTop } from './util.js';
-import { $editorDraft, $editorPreview } from './editor/store.js';
-import { compareProjects } from './projectOrder.js';
+import { $editorDraft, $editorPreview, $editorOrder } from './editor/store.js';
+import { compareProjects, projectComparator } from './projectOrder.js';
 
 import { useProjectState, useLoadingState } from './hooks/index_hooks.js';
 import { usePressableCallbacks } from './hooks/project_pressable_hooks.js';
@@ -38,17 +38,22 @@ function filterProjectData(activeGroups) {
 }
 
 // Project editor (dev only): show the unsaved draft in place of the saved
-// project, or as an extra card when it's new.
-function withEditorDraft(projects, draft) {
-  if (!draft) {
+// project, or as an extra card when it's new, and apply order changes saved
+// since the page loaded.
+function withEditorChanges(projects, draft, yearOrderOverrides) {
+  const hasOrderChanges = Object.keys(yearOrderOverrides).length > 0;
+  if (!draft && !hasOrderChanges) {
     return projects;
   }
-  const { originalName, project } = draft;
-  const shown = projects.map((saved) => (saved.name === originalName ? project : saved));
-  if (!shown.includes(project)) {
-    shown.push(project);
+  let shown = projects;
+  if (draft) {
+    const { originalName, project } = draft;
+    shown = projects.map((saved) => (saved.name === originalName ? project : saved));
+    if (!shown.includes(project)) {
+      shown.push(project);
+    }
   }
-  return shown.sort(compareProjects);
+  return [...shown].sort(projectComparator(yearOrderOverrides));
 }
 
 const PREVIEW_STATES = {
@@ -89,10 +94,11 @@ function App() {
   const [filteredProjects, setFilteredProjects] = useState(() => filterProjectData($activeGroups.get()));
   const editorDraft = useStore($editorDraft);
   const editorPreview = useStore($editorPreview);
+  const editorOrder = useStore($editorOrder);
   const isEditing = editorDraft !== null;
   const displayedProjects = useMemo(
-    () => withEditorDraft(filteredProjects, editorDraft),
-    [filteredProjects, editorDraft],
+    () => withEditorChanges(filteredProjects, editorDraft, editorOrder),
+    [filteredProjects, editorDraft, editorOrder],
   );
   const editedIndex = isEditing ? displayedProjects.indexOf(editorDraft.project) : -1;
   // the initial loading bar / mask only gates the first paint; filter changes
@@ -119,6 +125,19 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayedProjects.length]);
+
+  // card states go by position, so a reorder from the editor closes them all
+  // rather than leave the wrong card open
+  const isFirstOrder = useRef(true);
+  useEffect(() => {
+    if (isFirstOrder.current) {
+      isFirstOrder.current = false;
+      return;
+    }
+    resetActiveIndex();
+    setProjectStates((prev) => prev.map(() => ProjectStates.CLOSED));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorOrder]);
 
   // the editor's closed / hover / open buttons drive the edited card
   useEffect(() => {

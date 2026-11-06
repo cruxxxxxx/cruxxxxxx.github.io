@@ -31,3 +31,6 @@ dist/
 
 # phone copies of videos: 89 MB, hosting not decided yet (repo vs R2)
 public/mobile/*.mp4
+
+# mockup screenshots from the dev-only mockup mode (src/editor/mockup.js)
+.mockups/

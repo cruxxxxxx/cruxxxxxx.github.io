@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { $editorDraft, $editorPreview } from './store.js';
+import { $editorDraft, $editorPreview, $editorOrder } from './store.js';
 import { compareProjects } from '../projectOrder.js';
 import './editor.css';
 
 // Local-only project editor: `npm run dev`, then "edit" in the corner.
-// Edits show live on the real card; Save writes src/data/*.json (and dropped
-// media into public/) through the dev server routes in ./integration.mjs.
+// It opens on a list of every project by year: drag to reorder within a
+// year (saves right away), click to edit. Edits show live on the real card;
+// Save writes src/data/*.json (and dropped media into public/) through the
+// dev server routes in ./integration.mjs.
 
 const GROUPS = ['projects', 'experiments'];
 const SLIDER_FIELDS = [
@@ -17,6 +19,7 @@ const SLIDER_FIELDS = [
 const SLIDER_MIN = -100;
 const SLIDER_MAX = 20;
 const REOPEN_KEY = 'project-editor:reopen';
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp)$/i;
 
 export default function ProjectEditor() {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +35,7 @@ export default function ProjectEditor() {
     return data.groups;
   };
 
-  // after a save the page reloads; come back to the same project
+  // after a save the page reloads; come back to the same project (or the list)
   useEffect(() => {
     const reopenName = readReopenName();
     if (reopenName === null) {
@@ -40,19 +43,52 @@ export default function ProjectEditor() {
     }
     loadData().then((loaded) => {
       setIsOpen(true);
-      const saved = allProjects(loaded).find((project) => project.name === reopenName);
+      const saved = findByName(loaded, reopenName);
       if (saved) {
         startEditing(saved);
       }
     });
   }, []);
 
+  const savedProject = draft ? findByName(groups, draft.originalName) : null;
+  const hasUnsavedEdits = draft !== null
+    && (savedProject === null || JSON.stringify(savedProject) !== JSON.stringify(draft.project));
+
+  // ⌘S / Ctrl+S saves the open project
+  useEffect(() => {
+    if (!draft) {
+      return undefined;
+    }
+    const onKeyDown = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault();
+        save();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
+
   const open = async () => {
     setIsOpen(true);
     await loadData();
   };
 
+  const confirmDiscard = () => !hasUnsavedEdits || window.confirm('Drop your unsaved edits?');
+
+  const backToList = () => {
+    if (!confirmDiscard()) {
+      return;
+    }
+    $editorDraft.set(null);
+    $editorPreview.set('closed');
+    setStatus('');
+  };
+
   const close = () => {
+    if (!confirmDiscard()) {
+      return;
+    }
     setIsOpen(false);
     $editorDraft.set(null);
     $editorPreview.set('closed');
@@ -69,18 +105,6 @@ export default function ProjectEditor() {
     $editorPreview.set('closed');
     $editorDraft.set({ originalName: null, project: newProjectFrom(template) });
     setStatus('');
-  };
-
-  const pickProject = (event) => {
-    const value = event.target.value;
-    if (value === '__new') {
-      startNewProject();
-      return;
-    }
-    const saved = allProjects(groups).find((project) => project.name === value);
-    if (saved) {
-      startEditing(saved);
-    }
   };
 
   const save = async () => {
@@ -118,9 +142,8 @@ export default function ProjectEditor() {
   };
 
   const revert = () => {
-    const saved = allProjects(groups).find((project) => project.name === draft.originalName);
-    if (saved) {
-      startEditing(saved);
+    if (savedProject) {
+      startEditing(savedProject);
     } else {
       startNewProject();
     }
@@ -135,32 +158,35 @@ export default function ProjectEditor() {
   return (
     <aside className="project-editor" aria-label="project editor">
       <header className="pe-head">
-        <strong>projects</strong>
+        {draft ? (
+          <>
+            <button type="button" className="pe-link" onClick={backToList}>&larr; all projects</button>
+            <strong className="pe-title">
+              {draft.originalName === null ? 'new project' : oneLine(draft.originalName)}
+              {hasUnsavedEdits && <span className="pe-unsaved" title="unsaved changes"> •</span>}
+            </strong>
+          </>
+        ) : (
+          <>
+            <strong>projects</strong>
+            {groups && <button type="button" onClick={startNewProject}>+ new project</button>}
+          </>
+        )}
         <button type="button" className="pe-link" onClick={close}>close</button>
       </header>
 
-      {!groups ? <p>loading…</p> : (
-        <select className="pe-picker" value={pickerValue(draft)} onChange={pickProject}>
-          <option value="" disabled>pick a project…</option>
-          {GROUPS.map((group) => (
-            <optgroup key={group} label={group}>
-              {groups[group].map((project) => (
-                <option key={project.name} value={project.name}>{oneLine(project.name)}</option>
-              ))}
-            </optgroup>
-          ))}
-          <option value="__new">+ new project</option>
-        </select>
-      )}
+      {!groups && <p>loading…</p>}
 
-      {draft && <DraftForm draft={draft} preview={preview} />}
+      {groups && !draft && <ProjectList groups={groups} setGroups={setGroups} onPick={startEditing} />}
 
-      {draft && groups && <YearOrder draft={draft} groups={groups} />}
+      {draft && <DraftForm draft={draft} savedProject={savedProject} preview={preview} />}
 
       {draft && (
         <footer className="pe-actions">
-          <button type="button" className="pe-primary" onClick={save}>save</button>
-          <button type="button" onClick={revert}>revert</button>
+          <button type="button" className="pe-primary" onClick={save} disabled={!hasUnsavedEdits}>
+            save <em>⌘S</em>
+          </button>
+          <button type="button" onClick={revert} disabled={!hasUnsavedEdits}>revert</button>
           {draft.originalName !== null && <button type="button" className="pe-danger" onClick={remove}>delete</button>}
           {status && <p className="pe-status">{status}</p>}
         </footer>
@@ -169,12 +195,154 @@ export default function ProjectEditor() {
   );
 }
 
-function DraftForm({ draft, preview }) {
+// Every project by year, newest first, in homepage order. Drag a row (or use
+// its ↑/↓) to move it within its year: the order saves straight away and the
+// homepage follows without a reload. Click a row to edit the project.
+function ProjectList({ groups, setGroups, onPick }) {
+  const [status, setStatus] = useState('');
+  // while dragging: { year, name, names (the order being shown) }
+  const [drag, setDrag] = useState(null);
+  const years = projectsByYear(groups);
+
+  const saveOrder = async (names) => {
+    const previous = groups;
+    const previousOverrides = $editorOrder.get();
+    setGroups(withYearOrder(groups, names));
+    $editorOrder.set({ ...previousOverrides, ...yearOrderOverrides(groups, names) });
+    setStatus('saving order…');
+    const response = await fetch('/__editor/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ names }),
+    });
+    if (response.ok) {
+      setStatus('');
+      return;
+    }
+    const result = await response.json();
+    setGroups(previous);
+    $editorOrder.set(previousOverrides);
+    setStatus(`order not saved: ${result.error}`);
+  };
+
+  const moveByStep = (names, index, step) => {
+    const target = index + step;
+    if (target < 0 || target >= names.length) {
+      return;
+    }
+    const reordered = [...names];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    saveOrder(reordered);
+  };
+
+  const startDrag = (event, year, name, names) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', name); // Firefox won't drag without data
+    setDrag({ year, name, names, originalNames: names });
+  };
+
+  // the dragged row moves into place as it passes over the others
+  const dragOverRow = (event, year, overName) => {
+    if (!drag || drag.year !== year) {
+      return;
+    }
+    event.preventDefault();
+    if (overName === drag.name) {
+      return;
+    }
+    const row = event.currentTarget.getBoundingClientRect();
+    const isUpperHalf = event.clientY < row.top + row.height / 2;
+    const names = drag.names.filter((name) => name !== drag.name);
+    const insertAt = names.indexOf(overName) + (isUpperHalf ? 0 : 1);
+    names.splice(insertAt, 0, drag.name);
+    if (names.join('\n') !== drag.names.join('\n')) {
+      setDrag({ ...drag, names });
+    }
+  };
+
+  const drop = (event) => {
+    event.preventDefault();
+    if (drag && drag.names.join('\n') !== drag.originalNames.join('\n')) {
+      saveOrder(drag.names);
+    }
+    setDrag(null);
+  };
+
+  return (
+    <div className="pe-list">
+      <p className="pe-hint">drag to reorder within a year · click to edit</p>
+      {years.map(({ year, projects }) => {
+        const isDraggingHere = drag?.year === year;
+        const names = isDraggingHere ? drag.names : projects.map((project) => project.name);
+        const byName = Object.fromEntries(projects.map((project) => [project.name, project]));
+        return (
+          <section key={year} className="pe-year">
+            <h3>{year}</h3>
+            <ol
+              className={`pe-year-list${isDraggingHere ? ' pe-dragging' : ''}`}
+              onDragOver={(event) => isDraggingHere && event.preventDefault()}
+              onDrop={drop}>
+              {names.map((name, index) => {
+                const project = byName[name];
+                return (
+                  <li
+                    key={name}
+                    className={drag?.name === name ? 'pe-dragged' : ''}
+                    draggable={names.length > 1}
+                    onDragStart={(event) => startDrag(event, year, name, names)}
+                    onDragOver={(event) => dragOverRow(event, year, name)}
+                    onDragEnd={() => setDrag(null)}>
+                    {names.length > 1 && <span className="pe-grip" aria-hidden="true">⠿</span>}
+                    {/* not a <button>: some browsers won't start a drag on one */}
+                    <span
+                      className="pe-row-pick"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onPick(project)}
+                      onKeyDown={(event) => event.key === 'Enter' && onPick(project)}>
+                      <CoverThumb project={project} />
+                      <span className="pe-row-name">{oneLine(name)}</span>
+                      {project.group === 'experiments' && <em>exp</em>}
+                    </span>
+                    {names.length > 1 && (
+                      <span className="pe-row-steps">
+                        <button type="button" onClick={() => moveByStep(names, index, -1)} disabled={index === 0} aria-label="earlier">↑</button>
+                        <button type="button" onClick={() => moveByStep(names, index, 1)} disabled={index === names.length - 1} aria-label="later">↓</button>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        );
+      })}
+      {status && <p className="pe-status">{status}</p>}
+    </div>
+  );
+}
+
+function CoverThumb({ project }) {
+  const src = coverImage(project);
+  if (!src) {
+    return <span className="pe-thumb" />;
+  }
+  return <img className="pe-thumb" src={src} alt="" loading="lazy" draggable={false} />;
+}
+
+function DraftForm({ draft, savedProject, preview }) {
   const { project } = draft;
 
   // every change makes a new project object so the card re-renders live
   const update = (changes) => {
     $editorDraft.set({ ...draft, project: { ...project, ...changes } });
+  };
+
+  // Moved to another year, it shows (and saves) at the top of that year;
+  // moved back, it gets its old place again.
+  const changeYear = (year) => {
+    const isSavedYear = savedProject !== null && year === savedProject.year;
+    update({ year, yearOrder: isSavedYear ? savedProject.yearOrder : 0 });
   };
 
   return (
@@ -197,7 +365,7 @@ function DraftForm({ draft, preview }) {
         </label>
         <label className="pe-field pe-narrow">
           <span>year</span>
-          <input inputMode="numeric" value={project.year} onChange={(e) => update({ year: e.target.value })} />
+          <input inputMode="numeric" value={project.year} onChange={(e) => changeYear(e.target.value)} />
         </label>
       </div>
 
@@ -231,73 +399,6 @@ function DraftForm({ draft, preview }) {
         </label>
       </section>
     </div>
-  );
-}
-
-// Homepage order is newest year first; this sets the order among projects
-// that share a year. Moves save straight away (and reload the page).
-function YearOrder({ draft, groups }) {
-  const [status, setStatus] = useState('');
-  if (draft.originalName === null) {
-    return (
-      <section className="pe-section">
-        <h3>order</h3>
-        <p className="pe-status">save the new project first, then you can order it within its year</p>
-      </section>
-    );
-  }
-
-  const saved = allProjects(groups).find((project) => project.name === draft.originalName);
-  const sameYear = allProjects(groups)
-    .filter((project) => project.year === saved?.year)
-    .sort(compareProjects);
-  if (!saved || sameYear.length < 2) {
-    return null;
-  }
-
-  const hasUnsavedEdits = JSON.stringify(saved) !== JSON.stringify(draft.project);
-
-  const move = async (index, step) => {
-    const target = index + step;
-    if (target < 0 || target >= sameYear.length) {
-      return;
-    }
-    if (hasUnsavedEdits && !window.confirm('Reordering reloads the page and drops your unsaved edits. Continue?')) {
-      return;
-    }
-    const names = sameYear.map((project) => project.name);
-    [names[index], names[target]] = [names[target], names[index]];
-    setStatus('saving order…');
-    const response = await fetch('/__editor/order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ names }),
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      setStatus(`not saved: ${result.error}`);
-      return;
-    }
-    rememberReopenName(draft.originalName);
-    window.location.reload();
-  };
-
-  return (
-    <section className="pe-section">
-      <h3>order within {saved.year} <em>(saves right away)</em></h3>
-      <ol className="pe-year-order">
-        {sameYear.map((project, index) => (
-          <li key={project.name} className={project.name === draft.originalName ? 'pe-current' : ''}>
-            <span>{oneLine(project.name)} <em>{project.group}</em></span>
-            <span className="pe-media-buttons">
-              <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="earlier">↑</button>
-              <button type="button" onClick={() => move(index, 1)} disabled={index === sameYear.length - 1} aria-label="later">↓</button>
-            </span>
-          </li>
-        ))}
-      </ol>
-      {status && <p className="pe-status">{status}</p>}
-    </section>
   );
 }
 
@@ -461,15 +562,57 @@ function newProjectFrom(template) {
     category: '',
     group: 'projects',
     year: String(new Date().getFullYear()),
+    yearOrder: 0, // top of its year, like it will be once saved
     description: [''],
   };
 }
 
-function pickerValue(draft) {
-  if (!draft) {
+function findByName(groups, name) {
+  if (name === null) {
+    return null;
+  }
+  return allProjects(groups).find((project) => project.name === name) ?? null;
+}
+
+/** [{ year, projects }], newest year first, each in homepage order */
+function projectsByYear(groups) {
+  const years = [];
+  for (const project of [...allProjects(groups)].sort(compareProjects)) {
+    if (years.at(-1)?.year !== project.year) {
+      years.push({ year: project.year, projects: [] });
+    }
+    years.at(-1).projects.push(project);
+  }
+  return years;
+}
+
+/** names: one year's projects in their new order; positions count from 1 */
+function withYearOrder(groups, names) {
+  return Object.fromEntries(Object.entries(groups).map(([group, projects]) => [
+    group,
+    projects.map((project) => {
+      const position = names.indexOf(project.name);
+      return position < 0 ? project : { ...project, yearOrder: position + 1 };
+    }),
+  ]));
+}
+
+function yearOrderOverrides(groups, names) {
+  const year = findByName(groups, names[0]).year;
+  return Object.fromEntries(names.map((name, position) => [name, { year, yearOrder: position + 1 }]));
+}
+
+/** the cover (first media item) as an image URL, or '' for a video without a poster */
+function coverImage(project) {
+  const cover = project.mediaSrcs?.[0];
+  if (!cover) {
     return '';
   }
-  return draft.originalName ?? '__new';
+  const image = [entryPoster(cover), entrySrc(cover)].find((src) => IMAGE_EXTENSIONS.test(src));
+  if (!image) {
+    return '';
+  }
+  return /^https?:/.test(image) ? image : `/${image}`;
 }
 
 // descriptions are a list of paragraphs, or (in some older entries) one string

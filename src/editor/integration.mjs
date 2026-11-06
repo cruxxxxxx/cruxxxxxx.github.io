@@ -4,10 +4,11 @@
  * dropped media into public/. Nothing here runs in `astro build`, so the
  * deployed site never has these routes.
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatProjectJson } from './format-json.mjs';
+import { compareProjects } from '../projectOrder.js';
 import { MANIFEST_PATH, makeMobileVariant, mediaKind, missingVariants, readVariantManifest } from './media-variants.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -17,6 +18,8 @@ const DATA_FILES = {
   experiments: join(ROOT, 'src/data/experiments.json'),
 };
 const ABOUT_FILE = join(ROOT, 'src/data/about.json');
+// mockup screenshots (gitignored): design references, never site content
+const MOCKUP_DIR = join(ROOT, '.mockups');
 const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm', '.mio']);
 const MARGIN_FIELDS = [
   'marginTopOpen', 'marginBottomOpen',
@@ -53,13 +56,14 @@ export default function projectEditor() {
       'astro:config:setup': ({ command, injectScript }) => {
         if (command === 'dev') {
           injectScript('page', `import { mountProjectEditor } from '/src/editor/mount.jsx'; mountProjectEditor();`);
+          injectScript('page', `import { mountMockup } from '/src/editor/mockup.js'; mountMockup();`);
           injectScript('page', `import { mountDissolveTuner } from '/src/components/dissolve/dissolveTuner.ts'; mountDissolveTuner();`);
         }
       },
       'astro:server:setup': ({ server, logger }) => {
         viteServer = server;
         server.middlewares.use(async (req, res, next) => {
-          if (!req.url.startsWith('/__editor/')) {
+          if (!req.url.startsWith('/__editor/') && !req.url.startsWith('/__mockup/')) {
             return next();
           }
           try {
@@ -112,12 +116,31 @@ async function route(req, res) {
     }
     return sendJson(res, 200, { src: saved, mobile });
   }
+  if (action === 'POST /__mockup/save') {
+    const path = saveMockup(url.searchParams.get('page'), await readBody(req, { raw: true }));
+    return sendJson(res, 200, { path });
+  }
   if (action === 'POST /__editor/about-dissolve') {
     const { settings } = JSON.parse(await readBody(req));
     saveAboutDissolve(settings);
     return sendJson(res, 200, { ok: true });
   }
   throw httpError(404, `no editor route ${action}`);
+}
+
+// ── mockups ────────────────────────────────────────────────────────────────
+
+/** Saves a mockup screenshot as .mockups/<page>-<date>-<time>.png; returns its full path. */
+function saveMockup(page, png) {
+  if (png.length === 0) {
+    throw httpError(400, 'empty screenshot');
+  }
+  const pageName = (page ?? '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'home';
+  const stamp = new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '');
+  mkdirSync(MOCKUP_DIR, { recursive: true });
+  const path = join(MOCKUP_DIR, `${pageName}-${stamp}.png`);
+  writeFileSync(path, png);
+  return path;
 }
 
 // ── about page ─────────────────────────────────────────────────────────────
@@ -155,6 +178,7 @@ function saveProject(originalName, project) {
   if (originalName !== null && !original) {
     throw httpError(404, `no project named ${JSON.stringify(originalName)}`);
   }
+  const originalYear = original ? groups[original.group][original.index].year : null;
 
   if (original && original.group === project.group) {
     groups[project.group][original.index] = project;
@@ -166,6 +190,21 @@ function saveProject(originalName, project) {
     groups[project.group].push(project);
   }
   writeGroup(project.group, groups[project.group]);
+
+  // its old place (if any) belonged to another year
+  if (project.year !== originalYear) {
+    placeFirstInYear(project.name);
+  }
+}
+
+/** A new project, or one moved to another year, goes to the top of its year. */
+function placeFirstInYear(name) {
+  const groups = readAllGroups();
+  const placed = groups[findProject(groups, name).group].find((project) => project.name === name);
+  const others = Object.values(groups).flat()
+    .filter((project) => project.year === placed.year && project.name !== name)
+    .sort(compareProjects);
+  setYearOrder([name, ...others.map((project) => project.name)]);
 }
 
 function deleteProject(name) {
