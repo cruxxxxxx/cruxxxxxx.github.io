@@ -9,6 +9,9 @@ on:
   repository_dispatch:
     types: [blog-updated]
   workflow_dispatch:
+  # Monday mornings: refresh the week's Last.fm listening on the blog home
+  schedule:
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
@@ -33,6 +36,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist

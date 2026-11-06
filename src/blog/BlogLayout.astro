@@ -1,8 +1,9 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { href } from './lib/url';
-import { SPOTIFY_PLAYLIST_ID } from './site';
+import { SPOTIFY_PLAYLIST_ID, LASTFM_USER } from './site';
 import { playlistTracks } from './lib/playlist';
+import { weeklyListening } from './lib/lastfm';
 import './blog.css';
 
 interface Props {
@@ -15,13 +16,14 @@ interface Props {
 const { title = 'blog', description, image, type } = Astro.props;
 const isBlogHome = Astro.url.pathname.replace(/\/$/, '') === '/blog';
 const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) : [];
+const listening = SPOTIFY_PLAYLIST_ID && LASTFM_USER ? await weeklyListening(LASTFM_USER) : null;
 ---
 
 <SiteLayout title={title} description={description} image={image} type={type}>
   <main class="blog">
     {/* tells the script below to show the playlist strip on this page */}
     {SPOTIFY_PLAYLIST_ID && (
-      <div class="playlist-config" hidden data-playlist-id={SPOTIFY_PLAYLIST_ID} data-tracks={JSON.stringify(tracks)}></div>
+      <div class="playlist-config" hidden data-playlist-id={SPOTIFY_PLAYLIST_ID} data-tracks={JSON.stringify(tracks)} data-listening={JSON.stringify(listening)}></div>
     )}
     {!isBlogHome && <a class="blog-back" href={href('/')}>&larr; blog</a>}
     <slot />
@@ -173,7 +175,75 @@ const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) :
     return best;
   }
 
-  function createPlayer(playlistId: string) {
+  // ── this week's listening ──
+  // Under the player in the dropdown: the week's top albums and artist from
+  // Last.fm, fetched at build time (src/blog/lib/lastfm.ts). Built with DOM
+  // calls, not innerHTML, since the names come from Last.fm.
+  interface WeeklyAlbum { name: string; artist: string; url: string; cover: string }
+  interface WeeklyListening { albums: WeeklyAlbum[]; topArtist: { name: string; url: string } | null }
+
+  function createListening(listening: WeeklyListening) {
+    const section = document.createElement('section');
+    section.className = 'listening';
+    section.setAttribute('aria-label', "this week's listening");
+    section.append(createLabel('albums of the week:'), createAlbumCovers(listening.albums));
+    if (listening.topArtist) {
+      const artistLine = createLabel('artist of the week: ');
+      artistLine.append(createExternalLink(listening.topArtist.url, listening.topArtist.name));
+      section.append(artistLine);
+    }
+    return section;
+  }
+
+  function createLabel(text: string) {
+    const label = document.createElement('p');
+    label.className = 'listening-label';
+    label.textContent = text;
+    return label;
+  }
+
+  function createAlbumCovers(albums: WeeklyAlbum[]) {
+    const list = document.createElement('ol');
+    list.className = 'listening-albums';
+    for (const album of albums) {
+      const title = `${album.artist} \u2013 ${album.name}`;
+      const link = createExternalLink(album.url, '');
+      link.title = title;
+      link.append(album.cover ? createCover(album.cover, title) : createMissingCover(title));
+      const item = document.createElement('li');
+      item.append(link);
+      list.append(item);
+    }
+    return list;
+  }
+
+  function createCover(src: string, alt: string) {
+    const cover = document.createElement('img');
+    cover.src = src;
+    cover.alt = alt;
+    cover.width = 300;
+    cover.height = 300;
+    cover.loading = 'lazy';
+    return cover;
+  }
+
+  function createMissingCover(label: string) {
+    const placeholder = document.createElement('span');
+    placeholder.className = 'listening-no-cover';
+    placeholder.setAttribute('aria-label', label);
+    return placeholder;
+  }
+
+  function createExternalLink(url: string, text: string) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = text;
+    return link;
+  }
+
+  function createPlayer(playlistId: string, listening: WeeklyListening | null) {
     const element = document.createElement('div');
     element.id = PLAYER_ID;
     element.innerHTML = `
@@ -181,8 +251,11 @@ const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) :
         <span class="playlist-label">&#9835; ${IDLE_LABEL}</span><span class="playlist-arrow" aria-hidden="true"></span>
       </button>
       <div class="playlist-frame" inert>
-        <div class="playlist-frame-clip"><div class="playlist-frame-content"></div></div>
+        <div class="playlist-frame-clip"><div class="playlist-frame-content"><div class="playlist-embed"></div></div></div>
       </div>`;
+    if (listening) {
+      element.querySelector('.playlist-frame-content')!.append(createListening(listening));
+    }
     const toggle = element.querySelector<HTMLButtonElement>('.playlist-toggle')!;
     toggle.addEventListener('click', () => toggleExpanded(element, toggle, playlistId));
     stripHeightWatcher.observe(toggle);
@@ -224,13 +297,13 @@ const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) :
     if (frame.querySelector('iframe')) {
       return;
     }
-    const content = frame.querySelector('.playlist-frame-content')!;
+    const embed = frame.querySelector('.playlist-embed')!;
     const iframe = document.createElement('iframe');
     iframe.src = embedUrlFor(playlistId);
     iframe.title = 'Spotify playlist';
     iframe.height = '352';
     iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-    content.append(iframe);
+    embed.append(iframe);
   }
 
   // Measurements go on <html>, but each page swap replaces its attributes
@@ -314,7 +387,8 @@ const tracks = SPOTIFY_PLAYLIST_ID ? await playlistTracks(SPOTIFY_PLAYLIST_ID) :
     }
     if (!player) {
       tracks = JSON.parse(config.dataset.tracks || '[]');
-      player = createPlayer(config.dataset.playlistId!);
+      const listening: WeeklyListening | null = JSON.parse(config.dataset.listening || 'null');
+      player = createPlayer(config.dataset.playlistId!, listening);
       document.documentElement.append(player);
       slideIn(player);
       preloadEmbedWhenIdle(player, config.dataset.playlistId!);

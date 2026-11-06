@@ -4,3 +4,6 @@ export const AUTHOR = 'Mike';
 
 // Spotify playlist collapsed at the top of every blog page ('' hides it)
 export const SPOTIFY_PLAYLIST_ID = '6n0fgNImiybacC0xb9VooO';
+
+// Last.fm user whose week of listening shows under the playlist ('' hides it)
+export const LASTFM_USER = 'mooseboyq';
