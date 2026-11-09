@@ -3,6 +3,10 @@ import { ProjectStates, ProjectStateHandler } from './projectStatesHandler.js';
 import Slideshow from '../slideshow/slideshow.jsx';
 import { OpenMark } from '../openmark/openmark.jsx';
 import { DescriptionText } from './descriptionText.jsx';
+import { AmbientStatic } from './ambientStatic.jsx';
+import { NewBadge } from './newBadge.jsx';
+import { useStore } from '@nanostores/react';
+import { $badgeOnEveryCard } from '../../stores/effects.js';
 
 const MARGIN_FIELDS = [
   'marginTopOpen', 'marginBottomOpen',
@@ -29,6 +33,7 @@ function ProjectComponent(props) {
   const projectDescriptionRef = useRef();
   const innerInfoRef = useRef();
   const [isPlaying, setPlaying] = useState(false);
+  const badgeOnEveryCard = useStore($badgeOnEveryCard);
 
   useEffect(() => {
     const projectInfoElem = projectInfo.current;
@@ -186,6 +191,11 @@ function ProjectComponent(props) {
       <div ref={projectDescriptionRef} className="project-description">
         <DescriptionText description={project.description} />
       </div>
+
+      {/* over the card's visible window: the image while closed */}
+      <AmbientStatic enabled={state !== ProjectStates.OPEN} />
+      {/* fades out while the card is open, back in once it closes */}
+      {(project.isNew || badgeOnEveryCard) && <NewBadge faded={state === ProjectStates.OPEN} />}
 
     </div>
   );

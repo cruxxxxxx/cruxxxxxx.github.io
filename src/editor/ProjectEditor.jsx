@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $editorDraft, $editorPreview, $editorOrder } from './store.js';
 import { compareProjects } from '../projectOrder.js';
+import { EffectsPanel, dropEffectsPreview, hasUnsavedEffects } from './EffectsPanel.jsx';
 import './editor.css';
 
 // Local-only project editor: `npm run dev`, then "edit" in the corner.
@@ -19,12 +20,15 @@ const SLIDER_FIELDS = [
 const SLIDER_MIN = -100;
 const SLIDER_MAX = 20;
 const REOPEN_KEY = 'project-editor:reopen';
+// a project name never contains this, so it can stand for the effects panel
+const REOPEN_EFFECTS = '\u0000effects';
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp)$/i;
 
 export default function ProjectEditor() {
   const [isOpen, setIsOpen] = useState(false);
   const [groups, setGroups] = useState(null);
   const [status, setStatus] = useState('');
+  const [showEffects, setShowEffects] = useState(false);
   const draft = useStore($editorDraft);
   const preview = useStore($editorPreview);
 
@@ -43,6 +47,10 @@ export default function ProjectEditor() {
     }
     loadData().then((loaded) => {
       setIsOpen(true);
+      if (reopenName === REOPEN_EFFECTS) {
+        setShowEffects(true);
+        return;
+      }
       const saved = findByName(loaded, reopenName);
       if (saved) {
         startEditing(saved);
@@ -85,8 +93,25 @@ export default function ProjectEditor() {
     setStatus('');
   };
 
+  const leaveEffects = () => {
+    if (hasUnsavedEffects() && !window.confirm('Drop your unsaved effect changes?')) {
+      return false;
+    }
+    dropEffectsPreview();
+    setShowEffects(false);
+    return true;
+  };
+
+  const effectsSaved = () => {
+    rememberReopenName(REOPEN_EFFECTS);
+    window.location.reload();
+  };
+
   const close = () => {
     if (!confirmDiscard()) {
+      return;
+    }
+    if (showEffects && !leaveEffects()) {
       return;
     }
     setIsOpen(false);
@@ -158,7 +183,12 @@ export default function ProjectEditor() {
   return (
     <aside className="project-editor" aria-label="project editor">
       <header className="pe-head">
-        {draft ? (
+        {showEffects ? (
+          <>
+            <button type="button" className="pe-link" onClick={leaveEffects}>&larr; all projects</button>
+            <strong className="pe-title">card effects</strong>
+          </>
+        ) : draft ? (
           <>
             <button type="button" className="pe-link" onClick={backToList}>&larr; all projects</button>
             <strong className="pe-title">
@@ -170,6 +200,7 @@ export default function ProjectEditor() {
           <>
             <strong>projects</strong>
             {groups && <button type="button" onClick={startNewProject}>+ new project</button>}
+            {groups && <button type="button" onClick={() => setShowEffects(true)}>effects</button>}
           </>
         )}
         <button type="button" className="pe-link" onClick={close}>close</button>
@@ -177,7 +208,9 @@ export default function ProjectEditor() {
 
       {!groups && <p>loading…</p>}
 
-      {groups && !draft && <ProjectList groups={groups} setGroups={setGroups} onPick={startEditing} />}
+      {showEffects && <EffectsPanel onSaved={effectsSaved} />}
+
+      {groups && !draft && !showEffects && <ProjectList groups={groups} setGroups={setGroups} onPick={startEditing} />}
 
       {draft && <DraftForm draft={draft} savedProject={savedProject} preview={preview} />}
 
@@ -366,6 +399,13 @@ function DraftForm({ draft, savedProject, preview }) {
         <label className="pe-field pe-narrow">
           <span>year</span>
           <input inputMode="numeric" value={project.year} onChange={(e) => changeYear(e.target.value)} />
+        </label>
+        <label className="pe-field pe-narrow">
+          <span>new badge</span>
+          <input
+            type="checkbox"
+            checked={Boolean(project.isNew)}
+            onChange={(e) => update({ isNew: e.target.checked || undefined })} />
         </label>
       </div>
 

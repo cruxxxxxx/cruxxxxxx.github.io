@@ -18,6 +18,7 @@ const DATA_FILES = {
   experiments: join(ROOT, 'src/data/experiments.json'),
 };
 const ABOUT_FILE = join(ROOT, 'src/data/about.json');
+const EFFECTS_FILE = join(ROOT, 'src/data/effects.json');
 // mockup screenshots (gitignored): design references, never site content
 const MOCKUP_DIR = join(ROOT, '.mockups');
 const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm', '.mio']);
@@ -125,6 +126,11 @@ async function route(req, res) {
     saveAboutDissolve(settings);
     return sendJson(res, 200, { ok: true });
   }
+  if (action === 'POST /__editor/effects') {
+    const { effects } = JSON.parse(await readBody(req));
+    saveEffects(effects);
+    return sendJson(res, 200, { ok: true });
+  }
   throw httpError(404, `no editor route ${action}`);
 }
 
@@ -154,6 +160,17 @@ function saveAboutDissolve(settings) {
   about.dissolve = settings;
   writeFileSync(ABOUT_FILE, `${JSON.stringify(about, null, 2)}\n`);
   announceDataChange(ABOUT_FILE);
+}
+
+// ── card effects ───────────────────────────────────────────────────────────
+
+/** effects: the ambient static and "new" badge settings, from the editor's effects panel */
+function saveEffects(effects) {
+  if (!effects?.ambientStatic || !effects?.newBadge) {
+    throw httpError(400, 'missing effects');
+  }
+  writeFileSync(EFFECTS_FILE, `${JSON.stringify(effects, null, 2)}\n`);
+  announceDataChange(EFFECTS_FILE);
 }
 
 // ── project data ───────────────────────────────────────────────────────────

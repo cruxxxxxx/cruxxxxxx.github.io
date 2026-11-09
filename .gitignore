@@ -34,3 +34,6 @@ public/mobile/*.mp4
 
 # mockup screenshots from the dev-only mockup mode (src/editor/mockup.js)
 .mockups/
+
+# editor swap files (.env.swp would hold the API key)
+*.swp

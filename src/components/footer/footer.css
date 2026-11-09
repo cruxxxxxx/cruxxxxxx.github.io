@@ -59,6 +59,43 @@
   padding-left: 0.5em;
 }
 
+/* the work button's new icon spins in on each click (see WORK_CYCLE) */
+.filter-button-image.cycled-in {
+  animation: cycleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cycleIn {
+  from {
+    opacity: 0;
+    transform: rotate(-120deg) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-button-image.cycled-in { animation: none; }
+}
+
+/* ● ○ ○ under the work button's label: where it is in the cycle */
+.cycle-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.35em;
+  margin-top: 0.35em;
+  padding-left: 0.5em; /* lines up with the label */
+}
+
+.cycle-dot {
+  width: 0.4em;
+  height: 0.4em;
+  border: 1px solid white;
+  border-radius: 50%;
+  transition: background-color 0.25s ease;
+}
+
+.cycle-dot.current {
+  background: white;
+}
+
 .inside-footer {
   color: white;
   padding-top: 0.1em;
@@ -87,7 +124,8 @@
   width: min(500px, 80%);
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  /* evenly spaced, so two buttons sit in toward the middle, not at the edges */
+  justify-content: space-evenly;
 }
 
 .footer-arrow {
@@ -205,4 +243,107 @@
 
 .footer-caret.open .footer-caret-line.right {
   transform: rotate(-50deg);
+}
+
+/* ── compact: one slim row, always showing (?footer=compact) ── */
+.outside-footer.compact {
+  padding: 0.4em 0;
+  transform: none !important;
+  animation: none !important;
+}
+
+.outside-footer.compact .footer-arrow-container,
+.outside-footer.compact > .footer-line,
+.outside-footer.compact br {
+  display: none;
+}
+
+.outside-footer.compact .inside-footer {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.6em 1.4em;
+  padding: 0;
+}
+
+.outside-footer.compact .buttons-container {
+  width: auto;
+  gap: 1.4em;
+}
+
+/* icon on the left, label (and the cycle dots) beside it */
+.outside-footer.compact .button-container {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 0.1em;
+}
+
+.outside-footer.compact .filter-button {
+  grid-row: 1 / 3;
+  width: 2.6em;
+  height: 2.6em;
+  padding: 0;
+}
+
+.outside-footer.compact .filter-button-image {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-width: 2px;
+}
+
+.outside-footer.compact .filter-button-label {
+  grid-row: 1 / 3;
+  align-self: center;
+  text-align: left;
+}
+
+/* the work button's dots stand in a little column between icon and label,
+   so its label lines up with blog's */
+.outside-footer.compact #first-button {
+  grid-template-columns: auto auto auto;
+}
+
+.outside-footer.compact .cycle-dots {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  flex-direction: column;
+  align-self: center;
+  gap: 0.2em;
+  margin: 0 0.15em 0 0.3em;
+  padding: 0;
+}
+
+.outside-footer.compact .cycle-dot {
+  width: 0.32em;
+  height: 0.32em;
+}
+
+.outside-footer.compact #first-button .filter-button-label {
+  grid-column: 3;
+}
+
+/* the line between the buttons and the links stands up */
+.outside-footer.compact .inside-footer > .footer-line {
+  width: 1px;
+  height: 1.8em;
+  margin: 0;
+}
+
+/* the work button's labels, stacked in one cell; only the current one shows */
+.label-stack {
+  display: inline-grid;
+  justify-items: center;
+}
+
+.label-stack > span {
+  grid-area: 1 / 1;
+}
+
+.label-stack > .label-spacer {
+  visibility: hidden;
+}
+
+.outside-footer.compact .label-stack {
+  justify-items: start;
 }

@@ -220,7 +220,8 @@
 				"\n\n[A full technical breakdown here, and some more personal thoughts on the future of software development](https://hypnotize.works/gdx-3ds/postmortem/cost.html)",
 				"\n\nTools: Claude, devkitPro, G-Diffuser"
 			],
-			"yearOrder": 2
+			"yearOrder": 2,
+			"isNew": true
 		},
 		{
 			"name": "Overlap",
@@ -243,7 +244,8 @@
 				"\n\n[github](https://github.com/cruxxxxxx/Overlap)",
 				"\n\ntools: Claude, Swift, CLIP"
 			],
-			"yearOrder": 3
+			"yearOrder": 3,
+			"isNew": true
 		}
 	]
 }

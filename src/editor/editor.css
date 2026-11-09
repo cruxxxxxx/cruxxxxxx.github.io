@@ -185,3 +185,27 @@
 .pe-status { flex-basis: 100%; margin: 4px 0 0; color: #555; }
 
 .project-editor button:disabled { opacity: .3; cursor: default; }
+
+/* card effects panel */
+.pe-check { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.project-editor .pe-check input { width: auto; }
+.project-editor .pe-check input[type="color"] { width: 32px; height: 24px; padding: 0; }
+.pe-stars { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0 8px; }
+.project-editor .pe-stars button { min-width: 28px; padding: 2px 4px; font-size: 15px; }
+/* long labels go on their own line above the slider */
+.pe-slider-wide { grid-template-columns: 1fr 64px; margin-bottom: 4px; }
+.pe-slider-wide > span { grid-column: 1 / -1; color: #555; font-size: 11px; }
+/* the layered star, big, on a dark ground like a card image */
+.pe-star-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 96px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+  background: #222;
+  font-family: 'arrayregular';
+  font-size: 56px;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+}
+.pe-margins legend .pe-check { margin: 0; }

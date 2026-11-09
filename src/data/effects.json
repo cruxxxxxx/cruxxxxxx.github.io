@@ -1,0 +1,63 @@
+{
+  "ambientStatic": {
+    "minSeconds": 8,
+    "maxSeconds": 22,
+    "flashMs": 200,
+    "opacity": 1
+  },
+  "newBadge": {
+    "text": "✦ new ✦",
+    "letterMs": 110,
+    "pauseMs": 900,
+    "sizeEm": 1.1,
+    "topEm": 0.35,
+    "rightEm": 0.5,
+    "grey": "#9a9a9a",
+    "layered": false,
+    "layerLight": "together",
+    "layers": [
+      {
+        "on": true,
+        "star": "✧",
+        "scale": 1.5,
+        "x": 0,
+        "y": 0,
+        "rotate": 0,
+        "color": "#9a9a9a",
+        "spinRpm": 0,
+        "rayCount": 4,
+        "rayInner": 24,
+        "rayLength": 16,
+        "rayWidth": 5
+      },
+      {
+        "on": true,
+        "star": "✦",
+        "scale": 0.7,
+        "x": 0,
+        "y": 0,
+        "rotate": 45,
+        "color": "#9a9a9a",
+        "spinRpm": 0,
+        "rayCount": 4,
+        "rayInner": 24,
+        "rayLength": 16,
+        "rayWidth": 5
+      },
+      {
+        "on": false,
+        "star": "rays",
+        "scale": 1,
+        "x": 0,
+        "y": 0,
+        "rotate": 45,
+        "color": "#9a9a9a",
+        "spinRpm": 0,
+        "rayCount": 4,
+        "rayInner": 24,
+        "rayLength": 16,
+        "rayWidth": 5
+      }
+    ]
+  }
+}

@@ -231,3 +231,106 @@
   z-index: 10000; /* above .line-container */
   pointer-events: auto;
 }
+
+/* ambient static and the "new" badge sit over the card's visible window */
+.outer-project {
+  position: relative;
+}
+
+.ambient-static {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.ambient-static img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.new-badge {
+  position: absolute; /* size, offset and grey come from effects.json */
+  z-index: 10001; /* above the static and .line-container */
+  font-family: 'arrayregular';
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+  white-space: pre;
+  pointer-events: none;
+}
+
+.new-badge {
+  transition: opacity 0.4s ease;
+}
+
+.new-badge.faded {
+  opacity: 0;
+}
+
+.new-badge .lit {
+  color: white;
+}
+
+/* a layered star: every layer centred over the character's space */
+.badge-stack {
+  position: relative;
+  display: inline-block;
+}
+
+.badge-stack-space {
+  visibility: hidden;
+}
+
+.badge-layer {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  color: var(--layer-color);
+}
+
+.badge-layer.lit {
+  color: white;
+}
+
+/* a spinning layer turns around its own centre, on top of its set rotation */
+.badge-layer-spin {
+  display: inline-block;
+}
+
+.badge-layer-spin.spinning {
+  animation-name: badgeSpin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes badgeSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-layer-spin.spinning {
+    animation: none;
+  }
+}
+
+/* rays layer: one character square, centred on the stack */
+.badge-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1em;
+  height: 1em;
+  translate: -50% -50%;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
+/* rays have no text box of their own: fill the layer so they centre and
+   spin around its middle */
+.badge-layer-spin.holds-rays {
+  position: absolute;
+  inset: 0;
+}
