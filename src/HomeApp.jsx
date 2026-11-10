@@ -13,7 +13,7 @@ import { Project } from './components/project/project.jsx';
 import { Pressable } from 'react-native';
 import LoadingBar from 'react-top-loading-bar'
 import { useStore } from '@nanostores/react';
-import { $activeGroups, $filtering, $groupRequest } from './stores/site.js';
+import { $activeGroups, $groupRequest } from './stores/site.js';
 import { scrollToTop } from './util.js';
 import { $editorDraft, $editorPreview, $editorOrder } from './editor/store.js';
 import { compareProjects, projectComparator } from './projectOrder.js';
@@ -182,23 +182,54 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupRequest]);
 
+  // Each click starts a new run. A click while a wipe is still going doesn't
+  // wait for it: the wipe stops and the grid switches straight away, so
+  // clicking through the groups stays snappy.
+  const groupRun = useRef(0);
+  const wipeRunning = useRef(false);
+
   const applyGroups = async (groups) => {
-    $filtering.set(true);
+    const run = ++groupRun.current;
+    const isStale = () => run !== groupRun.current;
     setActiveIndex(null);
     setProjectStates((prev) => prev.map(() => ProjectStates.CLOSED));
     setProjectHash(null);
     scrollToTop();
 
+    if (wipeRunning.current) {
+      stopWipe();
+      setFilteredProjects(filterProjectData(groups));
+      return;
+    }
+
+    wipeRunning.current = true;
     await delay(250);
+    if (isStale() || !projectMaskRef.current) {
+      return;
+    }
     wipeScreen(projectMaskRef.current);
 
     await delay(150);
+    if (isStale()) {
+      return;
+    }
     setFilteredProjects(filterProjectData(groups));
 
     await delay(900);
-    projectMaskRef.current.style.display = 'none';
-    $filtering.set(false);
+    if (isStale()) {
+      return;
+    }
+    stopWipe();
     scrollToTop();
+  };
+
+  const stopWipe = () => {
+    wipeRunning.current = false;
+    const mask = projectMaskRef.current;
+    if (mask) { // gone if the page was left mid-wipe
+      mask.classList.remove('wipe');
+      mask.style.display = 'none';
+    }
   };
 
   const onMediaLoaded = useCallback((projectName) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
 import { navigate } from 'astro:transitions/client';
-import { $activeGroups, $filtering, ALL_GROUPS, isSameGroups, requestGroups } from '../../stores/site.js';
+import { $activeGroups, ALL_GROUPS, isSameGroups, requestGroups } from '../../stores/site.js';
 
 const isHomePage = () => window.location.pathname === '/';
 
@@ -15,25 +15,6 @@ const isBlogPath = (path) => path === '/blog' || path.startsWith('/blog/');
 
 // the frame persists across page changes, so track the current page ourselves;
 // it starts from the server's path so the server render and hydration agree
-// Trying out a smaller bar with no collapse: add ?footer=compact to any URL
-// (?footer=full goes back). It's remembered for the tab's session.
-const FOOTER_STYLE_KEY = 'footer-style';
-function useCompactFooter() {
-  const [compact, setCompact] = useState(false);
-  useEffect(() => {
-    try {
-      const asked = new URLSearchParams(window.location.search).get('footer');
-      if (asked === 'compact' || asked === 'full') {
-        sessionStorage.setItem(FOOTER_STYLE_KEY, asked);
-      }
-      setCompact(sessionStorage.getItem(FOOTER_STYLE_KEY) === 'compact');
-    } catch {
-      // no storage: stay full
-    }
-  }, []);
-  return compact;
-}
-
 function useCurrentPath(initialPath) {
   const [path, setPath] = useState(initialPath);
   useEffect(() => {
@@ -50,7 +31,6 @@ export function Footer({ initialPath }) {
   const activeGroups = useStore($activeGroups);
   const currentPath = useCurrentPath(initialPath);
   const onBlog = isBlogPath(currentPath);
-  const compact = useCompactFooter();
   const workStepIndex = Math.max(0, WORK_CYCLE.findIndex((step) => isSameGroups(activeGroups, step.groups)));
   const workStep = WORK_CYCLE[workStepIndex];
   // The icon only spins in after a click, not on page load. A ref, set before
@@ -88,14 +68,12 @@ export function Footer({ initialPath }) {
   }
 
   // Off the homepage the work button goes back to "all" (without a spin), so
-  // coming home, by its click or any link, always shows everything. A wipe cut
-  // short by leaving mid-way mustn't block the next click either.
+  // coming home, by its click or any link, always shows everything.
   useEffect(() => {
     if (currentPath === '/') {
       return;
     }
     hasCycled.current = false;
-    $filtering.set(false);
     if (!isSameGroups($activeGroups.get(), ALL_GROUPS)) {
       $activeGroups.set(ALL_GROUPS);
     }
@@ -158,7 +136,7 @@ export function Footer({ initialPath }) {
   }, [footerOpen]);
 
   return (
-    <div ref={footerRef} className={`outside-footer${compact ? ' compact' : ''}`}>
+    <div ref={footerRef} className="outside-footer">
       <div className="footer-arrow-container">
         {/* a plain button, not react-native's Pressable: the footer renders
             on the server, and react-native-web can't run there in dev */}

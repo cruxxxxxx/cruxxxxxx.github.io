@@ -12,22 +12,16 @@ export const $activeGroups = atom(ALL_GROUPS);
 /** A footer click asking the homepage to switch groups ({ groups }). */
 export const $groupRequest = atom(null);
 
-/** True while the homepage's wipe transition runs; the footer waits it out. */
-export const $filtering = atom(false);
-
 /**
- * Show these groups on the homepage (the footer's buttons). Ignored while a wipe is running; returns whether it was taken.
+ * Show these groups on the homepage (the footer's buttons). Takes effect right
+ * away, even mid-wipe: the homepage cuts the running wipe short.
  */
 export function requestGroups(groups) {
-  if ($filtering.get()) {
-    return false;
-  }
   const ordered = ALL_GROUPS.filter((group) => groups.includes(group));
   if (!isSameGroups($activeGroups.get(), ordered)) {
     $activeGroups.set(ordered);
     $groupRequest.set({ groups: ordered });
   }
-  return true;
 }
 
 export function isSameGroups(a, b) {

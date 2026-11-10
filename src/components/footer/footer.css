@@ -245,89 +245,96 @@
   transform: rotate(-50deg);
 }
 
-/* ── compact: one slim row, always showing (?footer=compact) ── */
-.outside-footer.compact {
-  padding: 0.4em 0;
-  transform: none !important;
-  animation: none !important;
-}
+/* ── desktop (mouse or trackpad, any window size): one slim row, always
+   showing, no collapse. Touch screens keep the tall footer above. ── */
+@media (hover: hover) and (pointer: fine) {
+  .outside-footer {
+    padding: 0.4em 0;
+    transform: none !important;
+    animation: none !important;
+  }
 
-.outside-footer.compact .footer-arrow-container,
-.outside-footer.compact > .footer-line,
-.outside-footer.compact br {
-  display: none;
-}
+  .outside-footer .footer-arrow-container,
+  .outside-footer > .footer-line,
+  .outside-footer br {
+    display: none;
+  }
 
-.outside-footer.compact .inside-footer {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.6em 1.4em;
-  padding: 0;
-}
+  .outside-footer .inside-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.6em 1.4em;
+    padding: 0;
+  }
 
-.outside-footer.compact .buttons-container {
-  width: auto;
-  gap: 1.4em;
-}
+  .outside-footer .buttons-container {
+    width: auto;
+    gap: 1.4em;
+  }
 
-/* icon on the left, label (and the cycle dots) beside it */
-.outside-footer.compact .button-container {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  column-gap: 0.1em;
-}
+  /* icon on the left, label (and the cycle dots) beside it */
+  .outside-footer .button-container {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    column-gap: 0.1em;
+  }
 
-.outside-footer.compact .filter-button {
-  grid-row: 1 / 3;
-  width: 2.6em;
-  height: 2.6em;
-  padding: 0;
-}
+  .outside-footer .filter-button {
+    grid-row: 1 / 3;
+    width: 2.6em;
+    height: 2.6em;
+    padding: 0;
+  }
 
-.outside-footer.compact .filter-button-image {
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  border-width: 2px;
-}
+  .outside-footer .filter-button-image {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border-width: 2px;
+  }
 
-.outside-footer.compact .filter-button-label {
-  grid-row: 1 / 3;
-  align-self: center;
-  text-align: left;
-}
+  .outside-footer .filter-button-label {
+    grid-row: 1 / 3;
+    align-self: center;
+    text-align: left;
+  }
 
-/* the work button's dots stand in a little column between icon and label,
-   so its label lines up with blog's */
-.outside-footer.compact #first-button {
-  grid-template-columns: auto auto auto;
-}
+  /* the work button's dots stand in a little column between icon and label,
+     so its label lines up with blog's */
+  .outside-footer #first-button {
+    grid-template-columns: auto auto auto;
+  }
 
-.outside-footer.compact .cycle-dots {
-  grid-column: 2;
-  grid-row: 1 / 3;
-  flex-direction: column;
-  align-self: center;
-  gap: 0.2em;
-  margin: 0 0.15em 0 0.3em;
-  padding: 0;
-}
+  .outside-footer .cycle-dots {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    flex-direction: column;
+    align-self: center;
+    gap: 0.2em;
+    margin: 0 0.15em 0 0.3em;
+    padding: 0;
+  }
 
-.outside-footer.compact .cycle-dot {
-  width: 0.32em;
-  height: 0.32em;
-}
+  .outside-footer .cycle-dot {
+    width: 0.32em;
+    height: 0.32em;
+  }
 
-.outside-footer.compact #first-button .filter-button-label {
-  grid-column: 3;
-}
+  .outside-footer #first-button .filter-button-label {
+    grid-column: 3;
+  }
 
-/* the line between the buttons and the links stands up */
-.outside-footer.compact .inside-footer > .footer-line {
-  width: 1px;
-  height: 1.8em;
-  margin: 0;
+  /* the line between the buttons and the links stands up */
+  .outside-footer .inside-footer > .footer-line {
+    width: 1px;
+    height: 1.8em;
+    margin: 0;
+  }
+
+  .outside-footer .label-stack {
+    justify-items: start;
+  }
 }
 
 /* the work button's labels, stacked in one cell; only the current one shows */
@@ -342,8 +349,4 @@
 
 .label-stack > .label-spacer {
   visibility: hidden;
-}
-
-.outside-footer.compact .label-stack {
-  justify-items: start;
 }
