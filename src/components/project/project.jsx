@@ -34,6 +34,8 @@ function ProjectComponent(props) {
   const innerInfoRef = useRef();
   const [isPlaying, setPlaying] = useState(false);
   const badgeOnEveryCard = useStore($badgeOnEveryCard);
+  // the card has faded in; the "new" badge pops in only after that
+  const [cardShown, setCardShown] = useState(false);
 
   useEffect(() => {
     const projectInfoElem = projectInfo.current;
@@ -119,7 +121,10 @@ function ProjectComponent(props) {
       innerProjectElem.classList.add('fade-in');
     }
 
-    const handleAnimationEnd = () => {
+    const handleAnimationEnd = (event) => {
+      if (event.target === innerProjectElem) {
+        setCardShown(true);
+      }
       setPlaying(false);
       innerProjectElem.style.opacity = 1;
       innerProjectElem.classList.remove('fade-in');
@@ -195,7 +200,7 @@ function ProjectComponent(props) {
       {/* over the card's visible window: the image while closed */}
       <AmbientStatic enabled={state !== ProjectStates.OPEN} />
       {/* fades out while the card is open, back in once it closes */}
-      {(project.isNew || badgeOnEveryCard) && <NewBadge faded={state === ProjectStates.OPEN} />}
+      {(project.isNew || badgeOnEveryCard) && cardShown && <NewBadge faded={state === ProjectStates.OPEN} />}
 
     </div>
   );

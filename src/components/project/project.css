@@ -261,6 +261,17 @@
 
 .new-badge {
   transition: opacity 0.4s ease;
+  /* fades in once its card has faded in; "backwards" so once it's done,
+     .faded can still fade it out */
+  animation: badgeFadeIn 0.6s 0.1s backwards;
+}
+
+@keyframes badgeFadeIn {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .new-badge { animation: none; }
 }
 
 .new-badge.faded {
