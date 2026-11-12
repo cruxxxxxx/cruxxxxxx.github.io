@@ -24,6 +24,19 @@ const STATIC_SLIDERS = [
 
 let savedEffects = SavedEffects;
 
+// strengths are in fractions of the image's width
+const GLITCH_SLIDERS = [
+  { key: 'slideMs', label: 'length on a slide change (ms)', min: 100, max: 1200, step: 10 },
+  { key: 'slices', label: 'slices down the image', min: 2, max: 80, step: 1 },
+  { key: 'tear', label: 'slice jump', min: 0, max: 0.4, step: 0.005 },
+  { key: 'blocks', label: 'big block jumps', min: 0, max: 1, step: 0.05 },
+  { key: 'rgbSplit', label: 'colour split', min: 0, max: 0.06, step: 0.001 },
+  { key: 'wave', label: 'wave bend', min: 0, max: 0.06, step: 0.001 },
+  { key: 'noise', label: 'grain', min: 0, max: 1, step: 0.05 },
+  { key: 'scanlines', label: 'scanlines', min: 0, max: 1, step: 0.05 },
+  { key: 'rate', label: 're-rolls per second (low = choppier)', min: 2, max: 60, step: 1 },
+];
+
 const BADGE_SLIDERS = [
   { key: 'letterMs', label: 'letter speed (ms per letter)', min: 20, max: 500, step: 10 },
   { key: 'pauseMs', label: 'pause between sweeps (ms)', min: 0, max: 5000, step: 50 },
@@ -67,6 +80,7 @@ export function EffectsPanel({ onSaved }) {
   const isUnsaved = JSON.stringify(effects) !== JSON.stringify(savedEffects);
 
   const updateStatic = (changes) => $effects.set({ ...effects, ambientStatic: { ...effects.ambientStatic, ...changes } });
+  const updateGlitch = (changes) => $effects.set({ ...effects, glitch: { ...effects.glitch, ...changes } });
   const updateBadge = (changes) => $effects.set({ ...effects, newBadge: { ...effects.newBadge, ...changes } });
 
   const save = async () => {
@@ -97,6 +111,44 @@ export function EffectsPanel({ onSaved }) {
             onChange={(value) => updateStatic({ [slider.key]: value })} />
         ))}
         <button type="button" onClick={() => $flashStaticNow.set($flashStaticNow.get() + 1)}>flash now</button>
+      </section>
+
+      <section className="pe-section">
+        <h3>glitch shader <em>(random flashes and slide changes)</em></h3>
+        <label className="pe-check">
+          <input
+            type="checkbox"
+            checked={effects.glitch.shader}
+            onChange={(e) => updateGlitch({ shader: e.target.checked })} />
+          glitch the image itself <em>(off: the static image)</em>
+        </label>
+        {effects.glitch.shader && (
+          <fieldset className="pe-margins">
+            <legend>tear ⟷ snow</legend>
+            <NumberSlider
+              label={effects.glitch.randomMix ? 'mix (random each time)' : 'mix (0 = all tear, 1 = all snow, the original static)'}
+              min={0}
+              max={1}
+              step={0.05}
+              value={effects.glitch.mix}
+              onChange={(value) => updateGlitch({ mix: value, randomMix: false })} />
+            <label className="pe-check">
+              <input
+                type="checkbox"
+                checked={effects.glitch.randomMix}
+                onChange={(e) => updateGlitch({ randomMix: e.target.checked })} />
+              random mix for every glitch
+            </label>
+          </fieldset>
+        )}
+        {effects.glitch.shader && GLITCH_SLIDERS.map((slider) => (
+          <NumberSlider
+            key={slider.key}
+            {...slider}
+            value={effects.glitch[slider.key]}
+            onChange={(value) => updateGlitch({ [slider.key]: value })} />
+        ))}
+        <p className="pe-hint">"flash now" above plays it on one card on screen; a random flash lasts "flash length".</p>
       </section>
 
       <section className="pe-section">

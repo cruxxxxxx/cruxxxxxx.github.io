@@ -345,3 +345,12 @@
   position: absolute;
   inset: 0;
 }
+
+/* the shared shader-glitch canvas (see glitchShader.js): over the cards,
+   under the header and footer */
+.glitch-canvas {
+  position: fixed;
+  z-index: 9000;
+  display: none;
+  pointer-events: none;
+}

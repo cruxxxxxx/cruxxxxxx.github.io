@@ -5,6 +5,20 @@
     "flashMs": 200,
     "opacity": 1
   },
+  "glitch": {
+    "shader": true,
+    "slideMs": 320,
+    "slices": 24,
+    "tear": 0.08,
+    "rgbSplit": 0.012,
+    "blocks": 0.5,
+    "wave": 0.01,
+    "noise": 0.15,
+    "scanlines": 0.25,
+    "rate": 24,
+    "mix": 0,
+    "randomMix": false
+  },
   "newBadge": {
     "text": "✦ new ✦",
     "letterMs": 110,

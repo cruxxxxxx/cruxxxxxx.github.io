@@ -4,6 +4,8 @@ import 'react-multi-carousel/lib/styles.css';
 import ReactPlayerModule from 'react-player/lazy';
 import MioPlayerWrapper from '../mio/mioPlayerWrapper.jsx';
 import { ResponsiveImage, videoSourceFor } from './responsiveMedia.jsx';
+import { playGlitch } from '../glitch/glitchShader.js';
+import { $effects } from '../../stores/effects.js';
 
 // react-multi-carousel and react-player are CommonJS flagged __esModule; under
 // Vite the default import is the whole module object, so unwrap it (CRA's
@@ -14,11 +16,11 @@ const ReactPlayer = ReactPlayerModule.default ?? ReactPlayerModule;
 const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLoaded }, ref) => {
   const [loaded, setLoaded] = useState(new Array(mediaSrcs.length).fill(false));
   const [slideIndex, setSlideIndex] = useState(0);
-  const [showStatic, setShowStatic] = useState(false);
   // per-index flag: has the real video started playing yet? Until it has, the
   // poster stays overlaid so opening looks instant (no black/buffering gap).
   const [videoStarted, setVideoStarted] = useState({});
   const carousel = useRef();
+  const slideshowRef = useRef();
   const playerRefs = useRef([]);
 
   useImperativeHandle(ref, () => ({
@@ -129,11 +131,35 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
     return () => clearTimeout(slideChangeTimeout.current);
   }, []);
 
+  // The shader glitch over the slide change, from this slide to the next,
+  // when it's on and can read the images. An open card never plays the
+  // static (the closed cards' ambient flash), so otherwise nothing plays.
+  const glitchSlideChange = (newIndex) => {
+    const glitch = $effects.get().glitch;
+    const box = slideshowRef.current;
+    const card = box?.closest('.outer-project');
+    const list = box?.querySelector('.react-multi-carousel-list');
+    if (!glitch.shader || !card || !list) {
+      return;
+    }
+    const slides = box.querySelectorAll('.react-multi-carousel-item');
+    const mediaIn = (slide) => slide?.querySelector('video, img') ?? null;
+    const outgoing = mediaIn(box.querySelector('.react-multi-carousel-item--active'));
+    playGlitch({
+      windowElement: card,
+      frameElement: list,
+      snowElement: box, // where the static image used to sit
+      sources: [outgoing, mediaIn(slides[newIndex])],
+      durationMs: glitch.slideMs,
+      settings: glitch,
+      urgent: true,
+    });
+  };
+
   const handleSlideChange = (newIndex) => {
-    setShowStatic(true);
+    glitchSlideChange(newIndex);
     clearTimeout(slideChangeTimeout.current);
     slideChangeTimeout.current = setTimeout(() => {
-      setShowStatic(false);
       setSlideIndex(newIndex);
     }, 200);
   };
@@ -157,21 +183,7 @@ const Slideshow = forwardRef(({ mediaSrcs, projectName, isProjectOpen, onMediaLo
   };
 
   return (
-    <div style={{ position: 'relative'}}>
-      {showStatic && (
-        <img
-          src="/static.webp"
-          alt="Static"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 1000,
-          }}
-        />
-      )}
+    <div ref={slideshowRef} style={{ position: 'relative'}}>
       <Carousel ref={carousel}
         responsive={responsive}
         arrows={isProjectOpen && mediaSrcs.length > 1 }
